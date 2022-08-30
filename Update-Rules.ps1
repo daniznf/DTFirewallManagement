@@ -103,10 +103,12 @@ if (-not $Silent)
     Write-Host "Reading current firewall rules" -NoNewline
     if ($Action -or $Enabled -or $Direction) 
     { 
-        Write-Host " with filters:"  -NoNewline 
-        if ($Action) { Write-Host " Action" $Action -NoNewline }
-        if ($Enabled) { Write-Host ", Enabled" $Enabled -NoNewline }
-        if ($Direction) { Write-Host ", Direction" $Direction -NoNewline }
+        Write-Host " with filters: "  -NoNewline 
+        if ($Action) { Write-Host "Action" $Action -NoNewline }
+        if ($Action -and ($Enabled -or $Direction)) { Write-Host ", " -NoNewline }
+        if ($Enabled) { Write-Host "Enabled" $Enabled -NoNewline }
+        if (($Action -or $Enabled) -and $Direction) { Write-Host ", " -NoNewline }
+        if ($Direction) { Write-Host "Direction" $Direction -NoNewline }
     }
     Write-Host "..."
 }

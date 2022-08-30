@@ -1,5 +1,5 @@
 function Get-Version {
-    $Ver = [version]::new(0,3,0,0)    
+    $Ver = [version]::new(0,3,0,1)    
     return $Ver
 }
 
