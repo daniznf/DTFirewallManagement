@@ -49,6 +49,8 @@ param(
     $Version
 )
 
+# $StartTime = Get-Date
+
 function  Remove-Modules {
     Remove-Module GetVersion
     Remove-Module TestAdministrator
@@ -128,6 +130,9 @@ else
 {
     $RuleList
 }
+
+# $EndTime = Get-Date
+# Write-Host ($EndTime - $StartTime)
 
 Remove-Modules
 

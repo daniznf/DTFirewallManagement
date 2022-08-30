@@ -34,13 +34,19 @@ param(
     $DryRun,
 
     [switch]
-    # Don't write anything but errors
+    # Do not write anything but errors
     $Silent,
+
+    [switch]
+    # Only enable or disable rules
+    $FastMode,
 
     [switch]
     # Show script version
     $Version
 )
+
+# $StartTime = Get-Date
 
 function  Remove-Modules {
     Remove-Module GetVersion
@@ -141,95 +147,120 @@ for ($i = 1; $i -lt $CSVRuleIDs.Count; $i++)
         $PercentComplete = ($i / $CSVRuleIDs.Count * 100)
     }
     
-    $CurrentRule = Get-Rule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
-    
-    if ($CurrentRule)
+    if ($FastMode)
     {
-        # Check that CurrentRule equals CSVRule, or update it
-        if ($CSVRule.DisplayName -ne $CurrentRule.DisplayName)
+        if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
+        
+        # Search for corresponding rule in CurrentRules (I would not trust $i)
+        for ($j = 0; $j -lt $CurrentRules.Count; $j++)
         {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.DisplayName }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -NewDisplayName $CSVRule.DisplayName }
-        }
-        if ($CSVRule.Program -ne $CurrentRule.Program)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Program }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Program $CSVRule.Program }
-        }
-        if ($CSVRule.Enabled -ne $CurrentRule.Enabled)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Enabled }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Enabled $CSVRule.Enabled }
-        }
-        if ($CSVRule.Profile -ne $CurrentRule.Profile)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Profile }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Profile $CSVRule.Profile }
-        }
-        if ($CSVRule.Direction -ne $CurrentRule.Direction)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Direction }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Direction $CSVRule.Direction }
-        }
-        if ($CSVRule.Action -ne $CurrentRule.Action)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Action }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Action $CSVRule.Action }
-        }
-        if ($CSVRule.LocalAddress -ne $CurrentRule.LocalAddress)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.LocalAddress }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -LocalAddress $CSVRule.LocalAddress }
-        }
-        if ($CSVRule.RemoteAddress -ne $CurrentRule.RemoteAddress)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.RemoteAddress }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -RemoteAddress $CSVRule.RemoteAddress }
-        }
-        if ($CSVRule.Protocol -ne $CurrentRule.Protocol)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Protocol }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Protocol $CSVRule.Protocol }
-        }
-        if ($CSVRule.LocalPort -ne $CurrentRule.LocalPort)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.LocalPort }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -LocalPort $CSVRule.LocalPort }
-        }
-        if ($CSVRule.RemotePort -ne $CurrentRule.RemotePort)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.RemotePort }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -RemotePort $CSVRule.RemotePort }
-        }
-        if ($CSVRule.Description -ne $CurrentRule.Description)
-        {
-            if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Description }
-            if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Description $CSVRule.Description }
+            $CurrentRule = $CurrentRules[$j]
+            if ($CurrentRule.InstanceID -eq $CSVRule.ID)
+            {
+                if ($CSVRule.Enabled -ne $CurrentRule.Enabled)
+                {
+                    if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Enabled }
+                    if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Enabled $CSVRule.Enabled }
+                }
+            }
         }
     }
     else
     {
-        # Add CSVRule
-        if (-not $Silent) { Write-Host "Adding rule: " $CSVRule.DisplayName }
-        if (-not $DryRun)
+        $CurrentRule = Get-Rule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
+        
+        if ($CurrentRule)
         {
-            New-NetFirewallRule `
-                -ID $CSVRule.ID `
-                -DisplayName $CSVRule.DisplayName `
-                -Program $CSVRule.Program `
-                -Enabled $CSVRule.Enabled `
-                -Profile $CSVRule.Profile `
-                -Direction $CSVRule.Direction `
-                -Action $CSVRule.Action `
-                -LocalAddress $CSVRule.LocalAddress `
-                -RemoteAddress $CSVRule.RemoteAddress `
-                -Protocol $CSVRule.Protocol `
-                -LocalPort $CSVRule.LocalPort `
-                -RemotePort $CSVRule.RemotePort `
-                -Description $CSVRule.Description
+            # Check that CurrentRule equals CSVRule, or update it
+
+            if ($CSVRule.DisplayName -ne $CurrentRule.DisplayName)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.DisplayName }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -NewDisplayName $CSVRule.DisplayName }
+            }
+            if ($CSVRule.Program -ne $CurrentRule.Program)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Program }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Program $CSVRule.Program }
+            }
+            if ($CSVRule.Enabled -ne $CurrentRule.Enabled)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Enabled }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Enabled $CSVRule.Enabled }
+            }
+            if ($CSVRule.Profile -ne $CurrentRule.Profile)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Profile }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Profile $CSVRule.Profile }
+            }
+            if ($CSVRule.Direction -ne $CurrentRule.Direction)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Direction }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Direction $CSVRule.Direction }
+            }
+            if ($CSVRule.Action -ne $CurrentRule.Action)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Action }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Action $CSVRule.Action }
+            }
+            if ($CSVRule.LocalAddress -ne $CurrentRule.LocalAddress)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.LocalAddress }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -LocalAddress $CSVRule.LocalAddress }
+            }
+            if ($CSVRule.RemoteAddress -ne $CurrentRule.RemoteAddress)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.RemoteAddress }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -RemoteAddress $CSVRule.RemoteAddress }
+            }
+            if ($CSVRule.Protocol -ne $CurrentRule.Protocol)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Protocol }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Protocol $CSVRule.Protocol }
+            }
+            if ($CSVRule.LocalPort -ne $CurrentRule.LocalPort)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.LocalPort }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -LocalPort $CSVRule.LocalPort }
+            }
+            if ($CSVRule.RemotePort -ne $CurrentRule.RemotePort)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.RemotePort }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -RemotePort $CSVRule.RemotePort }
+            }
+            if ($CSVRule.Description -ne $CurrentRule.Description)
+            {
+                if (-not $Silent) { Write-Host "Updating: " $CurrentRule.DisplayName " -> " $CSVRule.Description }
+                if (-not $DryRun) { Set-NetFirewallRule -ID $CSVRule.ID -Description $CSVRule.Description }
+            }
+        }
+        else
+        {
+            # Add CSVRule
+            if (-not $Silent) { Write-Host "Adding rule: " $CSVRule.DisplayName }
+            if (-not $DryRun)
+            {
+                New-NetFirewallRule `
+                    -ID $CSVRule.ID `
+                    -DisplayName $CSVRule.DisplayName `
+                    -Program $CSVRule.Program `
+                    -Enabled $CSVRule.Enabled `
+                    -Profile $CSVRule.Profile `
+                    -Direction $CSVRule.Direction `
+                    -Action $CSVRule.Action `
+                    -LocalAddress $CSVRule.LocalAddress `
+                    -RemoteAddress $CSVRule.RemoteAddress `
+                    -Protocol $CSVRule.Protocol `
+                    -LocalPort $CSVRule.LocalPort `
+                    -RemotePort $CSVRule.RemotePort `
+                    -Description $CSVRule.Description
+            }
         }
     }
 }
+
+# $EndTime = Get-Date
+# Write-Host ($EndTime - $StartTime)
 
 Remove-Module GetRules
 Remove-Module TestAdministrator
