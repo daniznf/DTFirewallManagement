@@ -148,7 +148,7 @@ function Parse-Rule {
     if ($Activity) { Write-Progress -CurrentOperation "Basic infos" @ProgressParams }
     $Description = $NFRule.Description
     $Enabled = $NFRule.Enabled
-    $Profile = $NFRule.Profile
+    $RProfile = $NFRule.Profile
     $Direction = $NFRule.Direction
     $Action = $NFRule.Action
         
@@ -173,7 +173,7 @@ function Parse-Rule {
     $RuleObj.DisplayName = $DisplayName
     $RuleObj.Program = $Program
     $RuleObj.Enabled = $Enabled
-    $RuleObj.Profile = $Profile
+    $RuleObj.Profile = $RProfile
     $RuleObj.Direction = $Direction
     $RuleObj.Action = $Action
     $RuleObj.LocalAddress = $LocalAddress
