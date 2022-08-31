@@ -262,8 +262,7 @@ for ($i = 1; $i -lt $CSVRuleIDs.Count; $i++)
 # $EndTime = Get-Date
 # Write-Host ($EndTime - $StartTime)
 
-Remove-Module GetRules
-Remove-Module TestAdministrator
+Remove-Modules
 
 <#
 .SYNOPSIS
