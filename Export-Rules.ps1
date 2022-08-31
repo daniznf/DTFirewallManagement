@@ -20,8 +20,7 @@
 
 using Module ".\Modules\GetVersion.psm1"
 using Module ".\Modules\TestAdministrator\TestAdministrator.psm1"
-using Module ".\Modules\Rule.psm1"
-using Module ".\Modules\GetRules.psm1"
+using Module ".\Modules\Rules.psm1"
 
 param(
     [string]
@@ -54,8 +53,7 @@ param(
 function  Remove-Modules {
     Remove-Module GetVersion
     Remove-Module TestAdministrator
-    Remove-Module Rule
-    Remove-Module GetRules
+    Remove-Module Rules
 }
 
 if ($Version)
@@ -66,10 +64,10 @@ if ($Version)
     exit
 }
 
-$GR = @{}
-    if ($Action) { $GR.Add("Action", $Action) }
-    if ($Enabled) { $GR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GR.Add("Direction", $Direction) }
+$GFR = @{}
+    if ($Action) { $GFR.Add("Action", $Action) }
+    if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
+    if ($Direction) { $GFR.Add("Direction", $Direction) }
 
 if (-not $(Test-Administrator))
 {
@@ -81,7 +79,7 @@ if (-not $(Test-Administrator))
 }
 
 # Create a special rule to be consumed only by Update-Rules, to avoid updating rules that were not exported
-$DefaultRule = [Rule]::new()
+$DefaultRule = [FWRule]::new()
 $DefaultRule.ID = "DefaultRule"
 $DefaultRule.DisplayName = "Default Rule"
 $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!!"
@@ -119,12 +117,13 @@ if ($PathCSV -ne "")
     }    
 }
 
-$Rules = Get-Rules @GR
+$Rules = Get-FirewallRules @GFR
 $RuleList.AddRange($Rules)
 
 if ($PathCSV -ne "")
 {
     $RuleList | Export-Csv $PathCSV -NoTypeInformation
+    Write-Host "Exported" $PathCSV
 }
 else
 {
@@ -154,8 +153,6 @@ Displays matching rules in this shell
 Exports to user's desktop all firewall rules in Rules.csv
 
 .EXAMPLE
-.\Export-Rules.ps1 -PathCSV .\test.csv -Action Allow -Enabled True -Profile Private -Direction Inbound
-Exports matching rules in test.csv
-
-
+.\Export-Rules.ps1 -PathCSV "$env:USERPROFILE\Desktop\Filtered_Rules.csv -Action Allow -Enabled True -Profile Private -Direction Inbound
+Exports matching rules in Filtered_Rules.csv
 #>
