@@ -50,8 +50,7 @@ function  Remove-Modules {
 
 if ($Version)
 {
-    $Ver = Get-Version
-    Write-Host "Version" $Ver.ToString()
+    Get-VersionString | Write-Host
     Remove-Modules
     exit
 }
