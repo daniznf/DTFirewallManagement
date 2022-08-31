@@ -18,6 +18,7 @@
     https://github.com/daniznf/DTFirewallManagement
 #>
 
+
 class FWRule {
     [string]$ID
     [string]$DisplayName
@@ -34,6 +35,13 @@ class FWRule {
     [string]$Description
 }
 
+<#
+    .SYNOPSIS
+    Returns all firewall rules that match given arguments
+
+    .OUTPUTS
+    A list of objects of type FWRule
+#>
 function Get-FirewallRules {
     param(
         [string]
@@ -46,13 +54,6 @@ function Get-FirewallRules {
         [ValidateSet("Inbound", "Outbound")]
         $Direction
     )
-    <#
-        .SYNOPSIS
-        Returns all firewall rules that match given arguments
-
-        .OUTPUTS
-        A list of objects of type FWRule
-    #>
 
     $GNFR = @{}
     if ($Action) { $GNFR.Add("Action", $Action) }
@@ -77,6 +78,22 @@ function Get-FirewallRules {
     return $OutRules
 }
 
+<#
+    .SYNOPSIS
+    Returns a single FWRule object that matches ID
+
+    .PARAMETER ID
+    The ID of the rule of whom to fetch infos
+
+    .PARAMETER Activity
+    The name of the Activity to display in progress bar
+
+    .PARAMETER PercentComplete
+    The level of PercentComplete for the progress bar
+
+    .OUTPUTS
+    An object of type FWRule
+#>
 function Get-Rule {
     param(
         [Parameter(Mandatory)]
@@ -87,23 +104,6 @@ function Get-Rule {
         [int]
         $PercentComplete
     )
-
-    <#
-        .SYNOPSIS
-        Returns a single FWRule object that matches ID
-
-        .PARAMETER ID
-        The ID of the rule of whom to fetch infos
-
-        .PARAMETER Activity
-        The name of the Activity to display in progress bar
-
-        .PARAMETER PercentComplete
-        The level of PercentComplete for the progress bar
-
-        .OUTPUTS
-        An object of type FWRule
-    #>
     
     $NFRule = Get-NetFirewallRule -ID $ID -ErrorAction Ignore
     
@@ -121,6 +121,22 @@ function Get-Rule {
     return $Parsed
 }
 
+<#
+    .SYNOPSIS
+    Fills all properties of a new FWRule object by querying Firewall services
+
+    .PARAMETER NFRule
+    The NetFirewallRule object to scan
+
+    .PARAMETER Activity
+    The name of the Activity to display in progress bar
+
+    .PARAMETER PercentComplete
+    The level of PercentComplete for the progress bar
+
+    .OUTPUTS
+    An object of type FWRule
+#>
 function Parse-FWRule {
     param(
         [Parameter(Mandatory)]
@@ -132,22 +148,7 @@ function Parse-FWRule {
         $PercentComplete
     )
 
-    <#
-        .SYNOPSIS
-        Fills all properties of a new FWRule object by querying Firewall services
-
-        .PARAMETER NFRule
-        The NetFirewallRule object to scan
-
-        .PARAMETER Activity
-        The name of the Activity to display in progress bar
-
-        .PARAMETER PercentComplete
-        The level of PercentComplete for the progress bar
-
-        .OUTPUTS
-        An object of type FWRule
-    #>
+    
 
     $ProgressParams = @{
         Activity = $Activity
@@ -199,6 +200,16 @@ function Parse-FWRule {
     return $FWRuleObj
 }
 
+<#
+    .SYNOPSIS
+    Adds a new NetFirewallRule with values from NewRule 
+
+    .PARAMETER Silent
+    Do not write anything but errors
+
+    .PARAMETER DryRun
+    Do not actually modify Firewall
+#>
 function  Add-Rule {
     param (
         [Parameter(Mandatory)]
@@ -209,17 +220,7 @@ function  Add-Rule {
         [switch]
         $DryRun
     )
-    <#
-        .SYNOPSIS
-        Adds a new NetFirewallRule with values from NewRule 
-
-        .PARAMETER Silent
-        Do not write anything but errors
-
-        .PARAMETER DryRun
-        Do not actually modify Firewall
-    #>
-    
+  
     if (-not $Silent) { Write-Host "Adding rule " $NewRule.DisplayName }
     if (-not $DryRun)
     {
@@ -240,6 +241,23 @@ function  Add-Rule {
     }
 }
 
+<#
+    .SYNOPSIS
+    Updates NetFirewallRule (searching by ID of ComparingRule) with values from SourceRule 
+    if they do not match values in ComparingRule
+    
+    .PARAMETER SourceRule
+    FWRule object to copy values from
+
+    .PARAMETER ComparingRule
+    FWRule object to check values against
+
+    .PARAMETER Silent
+    Do not write anything but errors
+
+    .PARAMETER DryRun
+    Do not actually modify Firewall
+#>
 function Update-Rule {
     param (
         [Parameter(Mandatory)]
@@ -253,23 +271,6 @@ function Update-Rule {
         [switch]
         $DryRun
     )
-    <#
-        .SYNOPSIS
-        Updates NetFirewallRule (searching by ID of ComparingRule) with values from SourceRule 
-        if they do not match values in ComparingRule
-        
-        .PARAMETER SourceRule
-        FWRule object to copy values from
-
-        .PARAMETER ComparingRule
-        FWRule object to check values against
-
-        .PARAMETER Silent
-        Do not write anything but errors
-
-        .PARAMETER DryRun
-        Do not actually modify Firewall
-    #>
         
     if ($SourceRule.DisplayName -ne $ComparingRule.DisplayName)
     {
@@ -369,6 +370,20 @@ function Update-Rule {
     }   
 }
 
+<#
+    .SYNOPSIS
+    Updates only the Enabled parameter of NetFirewallRule (searching by ID of ComparingRule)
+    if passed Enabled argument does not match ComparingRule.Enabled
+
+    .PARAMETER ComparingRule
+    FWRule object to check values against
+
+    .PARAMETER Silent
+    Do not write anything but errors
+
+    .PARAMETER DryRun
+    Do not actually modify firewall
+#>
 function Update-EnabledValue {
     param (
         [Parameter(Mandatory)]
@@ -382,20 +397,7 @@ function Update-EnabledValue {
         [switch]
         $DryRun
     )
-    <#
-        .SYNOPSIS
-        Updates only the Enabled parameter of NetFirewallRule (searching by ID of ComparingRule)
-        if it does not match ComparingRule.Enabled
 
-        .PARAMETER ComparingRule
-        FWRule object to check values against
-
-        .PARAMETER Silent
-        Do not write anything but errors
-
-        .PARAMETER DryRun
-        Do not actually modify firewall
-    #>
     if ($Enabled -ne $ComparingRule.Enabled)
     {
         if (-not $Silent) 
@@ -407,6 +409,3 @@ function Update-EnabledValue {
 }
 
 Export-ModuleMember -Function Get-FirewallRules,Get-Rule,Update-Rule,Update-EnabledValue,Add-Rule
-Export-ModuleMember -Variable FWRule
-
-

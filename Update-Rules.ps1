@@ -25,23 +25,18 @@ using Module ".\Modules\Rules.psm1"
 param(
     [Parameter(Mandatory)]
     [string]
-    # Complete path of CSV file containing rules to check
     $PathCSV,
     
     [switch]
-    # Do not actually modify firewall
     $DryRun,
 
     [switch]
-    # Do not write anything but errors
     $Silent,
 
     [switch]
-    # Only enable or disable rules
     $FastMode,
 
     [switch]
-    # Show script version
     $Version
 )
 
@@ -191,6 +186,21 @@ Please use Export-Rules, first, to export the CSV files with rules of your firew
 
 Update-Rules is part of Daniele's Tools Firewall Management scripts
 
+.PARAMETER PathCSV
+Complete path of CSV file containing rules to check
+
+.PARAMETER DryRun
+Do not actually modify firewall
+
+.PARAMETER Silent
+Do not write anything but errors
+
+.PARAMETER FastMode
+Only enable or disable rules
+
+.PARAMETER Version
+Show script version
+
 .EXAMPLE
 .\Update-Rules.ps1 -PathCSV "$env:USERPROFILE\Desktop\Rules.csv"
 Imports rules from Rules.csv in user's desktop and updates firewall consequently
@@ -202,4 +212,7 @@ Only simulate changes in Firewall, but do not actually modify it
 .EXAMPLE
 .\Update-Rules.ps1 -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -FastMode
 Fast check and update only Enabled value
+
+.LINK
+https://github.com/daniznf/DTFirewallManagement
 #>

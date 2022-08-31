@@ -24,27 +24,21 @@ using Module ".\Modules\Rules.psm1"
 
 param(
     [string]
-    # Complete path of CSV file where to write rules of firewall.
-    # If null, rules will just be printed out in stdout
     $PathCSV,
 
     [string]
-    # Read only rules with this Action value
     [ValidateSet("Allow", "Block")]
     $Action,
 
     [string]
-    # Read only rules with this Enabled value
     [ValidateSet("True", "False")]
     $Enabled,
 
     [string]
-    # Read only rules with this Direction value
     [ValidateSet("Inbound", "Outbound")]
     $Direction,
 
     [switch]
-    # Show script version
     $Version
 )
 
@@ -144,6 +138,22 @@ Exports in CSV firewall rules as per input parameters
 .DESCRIPTION
 Export-Rules is part of Daniele's Tools Firewall Management scripts
 
+.PARAMETER PathCSV
+Complete path of CSV file where to write rules of firewall.
+If null, rules will just be printed out in stdout
+
+.PARAMETER Action
+Read only rules with this Action value
+
+.PARAMETER Enabled
+Read only rules with this Enabled value
+
+.PARAMETER Direction
+Read only rules with this Direction value
+
+.PARAMETER Version
+Show script version
+
 .EXAMPLE
 .\Export-Rules.ps1
 Displays matching rules in this shell
@@ -155,4 +165,7 @@ Exports to user's desktop all firewall rules in Rules.csv
 .EXAMPLE
 .\Export-Rules.ps1 -PathCSV "$env:USERPROFILE\Desktop\Filtered_Rules.csv -Action Allow -Enabled True -Profile Private -Direction Inbound
 Exports matching rules in Filtered_Rules.csv
+
+.LINK
+https://github.com/daniznf/DTFirewallManagement
 #>

@@ -24,27 +24,21 @@ using Module ".\Modules\TestAdministrator\TestAdministrator.psm1"
 
 param(
     [String]
-    # Complete path of CSV file with items to exclude
     $Exclusions,
 
     [Int32] 
-    # Initially shows this number of events
     $RecentEvents = 30,
     
     [Int32]
-    # Time to wait between each follow cycle
     $FollowTime = 1,
 
     [switch]
-    # Show informations using less space
     $Compact,
 
     [switch]
-    # Show some additional informations
     $Debug,
 
     [switch]
-    # Show script version
     $Version
 )
 
@@ -359,7 +353,32 @@ After displaying some recent events, every new event will be displayed (follow).
 .DESCRIPTION
 Monitor-Events is part of Daniele's Tools Firewall Management scripts
 
+.PARAMETER Exclusions
+Complete path of CSV file with items to exclude
+
+.PARAMETER RecentEvents
+Initially shows this number of events
+
+.PARAMETER FollowTime
+Time to wait between each follow cycle
+
+.PARAMETER Compact
+Show informations using less space
+
+.PARAMETER Debug
+Show some additional informations
+
+.PARAMETER Version
+Show script version
 
 .EXAMPLE
-.\Monitor-Events.ps1 -Exclusions .\Monitoring-Exclusions.csv -RecentEvents 50 -FollowTime 5 -Compact
+.\Monitor-Events.ps1 -Exclusions .\Monitoring-Exclusions.csv -Compact
+Show firewall events in compact mode, excluding as per csv file
+
+.EXAMPLE
+.\Monitor-Events.ps1 -RecentEvents 50 -FollowTime 5
+Show firewall events starting with last 50 events and then waiting 5 seconds between each follow cycle
+
+.LINK
+https://github.com/daniznf/DTFirewallManagement
 #>
