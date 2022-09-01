@@ -1,6 +1,6 @@
 # Daniele's Tools Firewall Management
-DTFirewallManagement <br />
-A collection of scripts to manage your built in firewall <br />
+DTFirewallManagement <br/>
+A collection of scripts to manage your built in firewall <br/>
 Copyright (C) 2022 Daniznf
 
 ### Description
@@ -8,28 +8,36 @@ This collection is written to accomplish 2 main points:
 - Monitor firewall events
 - Update firewall rules following CSV rules file
 
-#### Update-Rules
-The update script can be run often (es: at boot), to avoid unwanted rules being applied, edited, or removed when you didn't want to.
-A CSV must be passed to the script to let it know what rules must be updated. That CSV may be exported by using the export script. <br />
-Rules existing only in CSV files will be added (and enabled). <br />
-Rules existing only in Firewall will be disabled (never deleted). <br />
-Rules existing in both CSV and Firewall will be updated as per CSV file.
-
-#### Export-Rules
-The export script is useful to export the CSV used by Update-Rule. You can freely edit this CSV to your needs.
-
 #### Monitor-Events
 The monitor script can be run when you want to see in realtime what your firewall is blocking.
 Each time an application gets blocked by firewall it will be displayed **briefly** by this script.
 After displaying some recent events, every new event will be displayed (follow).
 
+#### Update-Rules
+The update script can be run often (e.g.: at boot), to avoid unwanted rules being applied, edited, 
+or removed by other softwares when you didn't want to.
+A CSV must be passed to the script to let it know what rules must be enabled, disabled or updated. 
+That CSV may be exported by using the export script. <br/>
+Rules existing only in CSV files will be added (and enabled). <br/>
+Rules existing only in firewall will be disabled (never deleted). <br/>
+Rules existing in both CSV and firewall will be updated as per CSV file 
+(when using FastMode they will only be enabled/disabled)
+
+#### Export-Rules
+The export script is useful to export the CSV file used by Update-Rule. You can freely edit this CSV to your needs.
+
 ### Install
+Monitor-Events: <br/>
 To let monitor script work, in the group policy "Audit Filtering Platform Connection" the "Failure" property must be checked.
-When firewall will block inbound or outbound communication, this will be logged in the system's Security log, and at the same time the monitor script will be able to retrieve it.
+When firewall will block an inbound or outbound communication, this will be logged in the system's Security log, 
+and at the same time the monitor script will be able to retrieve it. It is recommended to set firewall to block by default 
+all Inbound and Outbound traffic, so only traffic explicitly permitted by rules will flow, while blocked traffic will be logged. <br/>
+Export-Rules and Update-Rules do not need any installation procedure.
 
 ### Run
 Monitor-events:
-Right click on this script and chose "Run with Powershell" (double-clicking will not work) or launch this script from powershell with desired parameters, if any.
+Right click on this script and chose "Run with Powershell" (double-clicking will not work) or 
+launch this script from powershell with desired parameters, if any.
 
 Export-Rules:
 Launch this script from powershell with needed parameters.
