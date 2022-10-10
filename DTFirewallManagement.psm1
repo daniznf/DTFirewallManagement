@@ -141,8 +141,9 @@ function Update-FWRules
         [string]
         $PathCSV,
 
+        [Alias("DryRun")]
         [switch]
-        $DryRun,
+        $WhatIf,
 
         [switch]
         $Silent,
@@ -176,7 +177,7 @@ function Update-FWRules
     }
 
     $ForwardingParams = @{}
-    if ($DryRun) { $ForwardingParams.Add("DryRun", $DryRun) }
+    if ($WhatIf) { $ForwardingParams.Add("WhatIf", $WhatIf) }
     if ($Silent) { $ForwardingParams.Add("Silent", $Silent) }
 
     $GNFR = @{}
@@ -284,7 +285,7 @@ function Update-FWRules
     .PARAMETER PathCSV
         Complete path of CSV file containing rules to check.
 
-    .PARAMETER DryRun
+    .PARAMETER WhatIf
         Do not actually modify firewall, only show what would happen.
 
     .PARAMETER Silent
@@ -298,7 +299,7 @@ function Update-FWRules
         Imports rules from Rules.csv in user's desktop and updates firewall consequently.
 
     .EXAMPLE
-        Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -DryRun
+        Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -WhatIf
         Only simulate changes in Firewall, but do not actually modify it.
 
     .EXAMPLE

@@ -38,7 +38,8 @@ class FWRule
 
 function Get-FirewallRules
 {
-    param(
+    param
+    (
         [string]
         [ValidateSet("Allow", "Block")]
         $Action,
@@ -215,7 +216,8 @@ function Parse-FWRule
 
 function  Add-Rule
 {
-    param (
+    param
+    (
         [Parameter(Mandatory)]
         [FWRule]
         $NewRule,
@@ -224,27 +226,29 @@ function  Add-Rule
         $Silent,
 
         [switch]
-        $DryRun
+        $WhatIf
     )
 
+    $WhatIfParam = @{}
+    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
+
     if (-not $Silent) { Write-Host "Adding rule " $NewRule.DisplayName }
-    if (-not $DryRun)
-    {
-        New-NetFirewallRule `
-            -ID $NewRule.ID `
-            -DisplayName $NewRule.DisplayName `
-            -Program $NewRule.Program `
-            -Enabled $NewRule.Enabled `
-            -Profile $NewRule.Profile `
-            -Direction $NewRule.Direction `
-            -Action $NewRule.Action `
-            -LocalAddress $NewRule.LocalAddress `
-            -RemoteAddress $NewRule.RemoteAddress `
-            -Protocol $NewRule.Protocol `
-            -LocalPort $NewRule.LocalPort `
-            -RemotePort $NewRule.RemotePort `
-            -Description $NewRule.Description
-    }
+
+    New-NetFirewallRule @WhatIfParam `
+        -ID $NewRule.ID `
+        -DisplayName $NewRule.DisplayName `
+        -Program $NewRule.Program `
+        -Enabled $NewRule.Enabled `
+        -Profile $NewRule.Profile `
+        -Direction $NewRule.Direction `
+        -Action $NewRule.Action `
+        -LocalAddress $NewRule.LocalAddress `
+        -RemoteAddress $NewRule.RemoteAddress `
+        -Protocol $NewRule.Protocol `
+        -LocalPort $NewRule.LocalPort `
+        -RemotePort $NewRule.RemotePort `
+        -Description $NewRule.Description
+
 
     <#
     .SYNOPSIS
@@ -256,14 +260,15 @@ function  Add-Rule
     .PARAMETER Silent
         Do not write anything but errors.
 
-    .PARAMETER DryRun
+    .PARAMETER WhatIf
         Do not actually modify Firewall.
     #>
 }
 
 function Update-Rule
 {
-    param (
+    param
+    (
         [Parameter(Mandatory)]
         [FWRule]
         $SourceRule,
@@ -276,68 +281,73 @@ function Update-Rule
         $Silent,
 
         [switch]
-        $DryRun
+        $WhatIf
     )
+
+    if ($SourceRule.ID -ne $ComparingRule.ID) { throw "SourceRule's ID and ComparingRule's ID must match."}
+
+    $WhatIfParam = @{}
+    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
 
     if ($SourceRule.DisplayName -ne $ComparingRule.DisplayName)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName "DisplayName to" $SourceRule.DisplayName }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -NewDisplayName $SourceRule.DisplayName }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -NewDisplayName $SourceRule.DisplayName
     }
     if ($SourceRule.Program -ne $ComparingRule.Program)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Program from" $ComparingRule.Program "to" $SourceRule.Program }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Program $SourceRule.Program }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Program $SourceRule.Program
     }
     if ($SourceRule.Enabled -ne $ComparingRule.Enabled)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Enabled from" $ComparingRule.Enabled "to" $SourceRule.Enabled }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Enabled $SourceRule.Enabled }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $SourceRule.Enabled
     }
     if ($SourceRule.Profile -ne $ComparingRule.Profile)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Profile from" $ComparingRule.Profile "to"  $SourceRule.Profile }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Profile $SourceRule.Profile }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Profile $SourceRule.Profile
     }
     if ($SourceRule.Direction -ne $ComparingRule.Direction)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Direction from" $ComparingRule.Direction "to"  $SourceRule.Direction }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Direction $SourceRule.Direction }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Direction $SourceRule.Direction
     }
     if ($SourceRule.Action -ne $ComparingRule.Action)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Action from" $ComparingRule.Action "to"  $SourceRule.Action }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Action $SourceRule.Action }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Action $SourceRule.Action
     }
     if ($SourceRule.LocalAddress -ne $ComparingRule.LocalAddress)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": LocalAddress from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -LocalAddress $SourceRule.LocalAddress }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $SourceRule.LocalAddress
     }
     if ($SourceRule.RemoteAddress -ne $ComparingRule.RemoteAddress)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": RemoteAddress from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -RemoteAddress $SourceRule.RemoteAddress }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $SourceRule.RemoteAddress
     }
     if ($SourceRule.Protocol -ne $ComparingRule.Protocol)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Protocol from" $ComparingRule.Protocol "to"  $SourceRule.Protocol }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Protocol $SourceRule.Protocol }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Protocol $SourceRule.Protocol
     }
     if ($SourceRule.LocalPort -ne $ComparingRule.LocalPort)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": LocalPort from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -LocalPort $SourceRule.LocalPort }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $SourceRule.LocalPort
     }
     if ($SourceRule.RemotePort -ne $ComparingRule.RemotePort)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": RemotePort from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -RemotePort $SourceRule.RemotePort }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $SourceRule.RemotePort
     }
     if ($SourceRule.Description -ne $ComparingRule.Description)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName "Description to" $SourceRule.Description }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Description $SourceRule.Description }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Description $SourceRule.Description
     }
 
     <#
@@ -353,14 +363,15 @@ function Update-Rule
     .PARAMETER Silent
         Do not write anything but errors.
 
-    .PARAMETER DryRun
+    .PARAMETER WhatIf
         Do not actually modify Firewall.
     #>
 }
 
 function Update-EnabledValue
 {
-    param (
+    param
+    (
         [Parameter(Mandatory)]
         [string]
         $Enabled,
@@ -373,13 +384,16 @@ function Update-EnabledValue
         $Silent,
 
         [switch]
-        $DryRun
+        $WhatIf
     )
+
+    $WhatIfParam = @{}
+    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
 
     if ($Enabled -ne $ComparingRule.Enabled)
     {
         if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName " Enabled from" $ComparingRule.Enabled "to" $Enabled }
-        if (-not $DryRun) { Set-NetFirewallRule -ID $ComparingRule.ID -Enabled $Enabled }
+        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $Enabled
     }
 
     <#
@@ -393,7 +407,7 @@ function Update-EnabledValue
     .PARAMETER Silent
         Do not write anything but errors.
 
-    .PARAMETER DryRun
+    .PARAMETER WhatIf
         Do not actually modify firewall.
     #>
 }
