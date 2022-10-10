@@ -1,4 +1,0 @@
-[submodule "Modules\\TestAdministrator"]
-	path = Modules/TestAdministrator
-	url = git@github.com:daniznf/TestAdministrator.git
-	branch = main
