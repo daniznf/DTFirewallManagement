@@ -75,8 +75,7 @@ function Export-FWRules {
             }
             else
             {
-                Write-Host "Rules have not been written to File!"
-                Exit 1
+                throw "Rules have not been written to File!"
             }
         }
     }
@@ -154,8 +153,7 @@ function Update-FWRules
 
     if (-not (Test-Path $PathCSV))
     {
-        Write-Output "Cannot find Rules CSV file!"
-        exit 1
+        throw [System.IO.FileNotFoundException]::new("Cannot find Rules CSV file!")
     }
 
     if (-not $Silent) { Write-Host "Reading $PathCSV..." }
@@ -171,9 +169,7 @@ function Update-FWRules
     }
     else
     {
-        Write-Host "Cannot read default rule in csv, please run Export-Rules.ps1"
-        Remove-Modules
-        exit 1
+        throw "Cannot read default rule in csv, please run Export-Rules.ps1"
     }
 
     $ForwardingParams = @{}
