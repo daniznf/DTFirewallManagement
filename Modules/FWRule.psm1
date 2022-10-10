@@ -36,7 +36,7 @@ class FWRule
     [string]$Description
 }
 
-function Get-FirewallRules
+function Get-FWRules
 {
     param
     (
@@ -84,7 +84,7 @@ function Get-FirewallRules
     #>
 }
 
-function Get-Rule
+function Get-FWRule
 {
     param(
         [Parameter(Mandatory)]
@@ -214,7 +214,7 @@ function Parse-FWRule
     #>
 }
 
-function  Add-Rule
+function  Add-FWRule
 {
     param
     (
@@ -265,7 +265,7 @@ function  Add-Rule
     #>
 }
 
-function Update-Rule
+function Update-FWRule
 {
     param
     (
@@ -378,8 +378,8 @@ function Update-EnabledValue
 
         [Parameter(Mandatory)]
         [CimInstance]
-
         $ComparingRule,
+
         [switch]
         $Silent,
 
@@ -412,4 +412,4 @@ function Update-EnabledValue
     #>
 }
 
-Export-ModuleMember -Function Get-FirewallRules,Get-Rule,Update-Rule,Update-EnabledValue,Add-Rule
+Export-ModuleMember -Function Get-FWRules, Get-FWRule, Update-FWRule, Update-EnabledValue, Add-FWRule

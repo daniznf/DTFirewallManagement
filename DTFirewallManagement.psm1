@@ -44,7 +44,7 @@ function Export-FWRules {
     if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
     if ($Direction) { $GFR.Add("Direction", $Direction) }
 
-    # Create a special rule to be consumed only by Update-Rules, to avoid updating rules that were not exported
+    # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
     $DefaultRule = [FWRule]::new()
     $DefaultRule.ID = "DefaultRule"
     $DefaultRule.DisplayName = "Default Rule"
@@ -80,7 +80,7 @@ function Export-FWRules {
         }
     }
 
-    $Rules = Get-FirewallRules @GFR
+    $Rules = Get-FWRules @GFR
     $RuleList.AddRange($Rules)
 
     if ($PathCSV)
@@ -100,7 +100,7 @@ function Export-FWRules {
 
     .DESCRIPTION
         Parses firewall rules finding properties like program, addresses, ports, etc., and exports them to
-        a CSV file that can be used to update Firewall using the command Update-Rules, or just prints them here.
+        a CSV file that can be used to update Firewall using the command Update-FWRules, or just prints them here.
 
     .PARAMETER PathCSV
         Complete path of CSV file where to write firewall rules.
@@ -169,7 +169,7 @@ function Update-FWRules
     }
     else
     {
-        throw "Cannot read default rule in csv, please run Export-Rules.ps1"
+        throw "Cannot read default rule in csv, please run Export-FWRules.ps1"
     }
 
     $ForwardingParams = @{}
@@ -198,7 +198,7 @@ function Update-FWRules
         Write-Host "..."
     }
 
-    # Much Faster than Get-FirewallRules
+    # Much Faster than Get-FWRules
     $CurrentRules = Get-NetFirewallRule @GNFR
 
     # Disable all rules that are not present in CSV
@@ -229,7 +229,7 @@ function Update-FWRules
             if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
             $RuleFound = $false
-            # Search for corresponding rule in CurrentRules (I would not trust $i)
+            # Search for corresponding rule in CurrentRules (I would not trust the order of CSVRules)
             for ($j = 0; $j -lt $CurrentRules.Count; $j++)
             {
                 $CurrentRule = $CurrentRules[$j]
@@ -248,21 +248,21 @@ function Update-FWRules
                 ("Action" -in $GNFR.Keys -and $GNFR.Keys["Action"] -eq "True") -and
                 ("Direction" -in $GNFR.Keys -and $GNFR.Keys["Direction"] -eq "True"))
                 {
-                    Add-Rule -NewRule $CSVRule @ForwardingParams
+                    Add-FWRule -NewRule $CSVRule @ForwardingParams
                 }
             }
         }
         else
         {
-            $CurrentRule = Get-Rule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
+            $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
 
             if ($CurrentRule)
             {
-                Update-Rule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams
+                Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams
             }
             else
             {
-                Add-Rule -NewRule $CSVRule @ForwardingParams
+                Add-FWRule -NewRule $CSVRule @ForwardingParams
             }
         }
     }
@@ -276,7 +276,7 @@ function Update-FWRules
         Rules present only in CSV files will be added (and enabled).
         Rules present only in Firewall will be disabled (never deleted).
         Rules present in both CSV and Firewall will be updated as per CSV file.
-        Please use Export-Rules, first, to export the CSV files with rules of your firewall
+        Please use Export-FWRules, first, to export the CSV files with rules of your firewall
 
     .PARAMETER PathCSV
         Complete path of CSV file containing rules to check.
