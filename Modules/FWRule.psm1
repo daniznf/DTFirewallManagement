@@ -398,11 +398,11 @@ function Update-EnabledValue
 
     <#
     .SYNOPSIS
-        Updates only the Enabled parameter of NetFirewallRule (searching by ID of ComparingRule)
+        Updates only the Enabled parameter of NetFirewallRule with same ID as ComparingRule
         if passed Enabled argument does not match ComparingRule.Enabled.
 
     .PARAMETER ComparingRule
-        FWRule object to check values against.
+        CimInstance object to check values against.
 
     .PARAMETER Silent
         Do not write anything but errors.

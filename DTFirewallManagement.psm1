@@ -226,44 +226,32 @@ function Update-FWRules
         }
         if ($FastMode)
         {
+
             if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
-            $RuleFound = $false
-            # Search for corresponding rule in CurrentRules (I would not trust the order of CSVRules)
+            $CurrentRule = $null
+            # Search for corresponding rule in CurrentRules (cannot trust the order of CSVRules)
             for ($j = 0; $j -lt $CurrentRules.Count; $j++)
             {
-                $CurrentRule = $CurrentRules[$j]
-                if ($CurrentRule.InstanceID -eq $CSVRule.ID)
+                $SearchingRule = $CurrentRules[$j]
+                if ($SearchingRule.InstanceID -eq $CSVRule.ID)
                 {
-                    Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams
-                    $RuleFound = $true
+                    $CurrentRule = $SearchingRule
                     break
                 }
             }
 
-            if ($RuleFound -eq $false)
-            {
-                # Bug: They should match...
-                if (("Enabled" -in $GNFR.Keys -and $GNFR.Keys["Enabled"] -eq "True") -and
-                ("Action" -in $GNFR.Keys -and $GNFR.Keys["Action"] -eq "True") -and
-                ("Direction" -in $GNFR.Keys -and $GNFR.Keys["Direction"] -eq "True"))
-                {
-                    Add-FWRule -NewRule $CSVRule @ForwardingParams
-                }
-            }
+            # $CurrentRule is a CimInstance directly from firewall, faster than Get-FWRule but several properties are missing, so it can (nearly) only be enabled/disabled.
+            if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
+            else { Add-FWRule -NewRule $CSVRule @ForwardingParams }
         }
         else
         {
             $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
 
-            if ($CurrentRule)
-            {
-                Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams
-            }
-            else
-            {
-                Add-FWRule -NewRule $CSVRule @ForwardingParams
-            }
+            # $CurrentRule is a FWRule object from FWRule module, slower than Get-NetFirewallRule but all properties are filled in and can be compared.
+            if ($CurrentRule) { Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams }
+            else { Add-FWRule -NewRule $CSVRule @ForwardingParams }
         }
     }
 
