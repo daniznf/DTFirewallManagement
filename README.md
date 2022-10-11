@@ -26,9 +26,18 @@ Rules existing in both CSV and firewall will be updated as per CSV file
 
 ### More Help
 ```
-Get-Help Export-Rules
+Get-Help Export-FWRules
 ```
 
 ```
-Get-Help Update-Rules
+Get-Help Update-FWRules
 ```
+
+### Requisites
+This module requires administrator privileges.
+
+### Install
+Run DTInstallModule.ps1 in DTInstallModule directory (https://github.com/daniznf/DTInstallModule), or copy module directory into one of directories in $env:PSModulePath.
+
+### Uninstall
+Delete DTFirewallManagement directory from the one you chose in $env:PSModulePath.

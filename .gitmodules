@@ -1,0 +1,3 @@
+[submodule "DTInstallModule"]
+	path = DTInstallModule
+	url = git@github.com:daniznf/DTInstallModule.git
