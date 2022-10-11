@@ -258,7 +258,7 @@ function Update-FWRules
 
     <#
     .SYNOPSIS
-        Updates firewall rules with ones in CSV file.
+        Updates firewall rules with matching values in CSV file.
 
     .DESCRIPTION
         Rules present only in CSV files will be added (and enabled).
