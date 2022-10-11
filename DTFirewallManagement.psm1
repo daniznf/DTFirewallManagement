@@ -19,7 +19,6 @@
 #>
 
 #Requires -RunAsAdministrator
-# using Module ".\Modules\FWRule.psm1"
 
 function Export-FWRules {
     param (

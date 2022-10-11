@@ -1,6 +1,6 @@
 # Daniele's Tools Firewall Management
 DTFirewallManagement <br/>
-A module to manage built in firewall <br/>
+Exports to CSV and updates from CSV firewall rules. <br/>
 Copyright (C) 2022 Daniznf
 
 ### Description
@@ -37,7 +37,7 @@ Get-Help Update-FWRules
 This module requires administrator privileges.
 
 ### Install
-Run DTInstallModule.ps1 in DTInstallModule directory (https://github.com/daniznf/DTInstallModule), or copy module directory into one of directories in $env:PSModulePath.
+Run DTInstallModule.ps1 in DTFirewallManagement directory (https://github.com/daniznf/DTInstallModule), or copy module directory into one of directories in $env:PSModulePath.
 
 ### Uninstall
 Delete DTFirewallManagement directory from the one you chose in $env:PSModulePath.
