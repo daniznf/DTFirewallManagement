@@ -316,38 +316,41 @@ function Update-FWRules
             $Activity = "Parsing rule " + $CSVRule.DisplayName
             $PercentComplete = ($i / $CSVRules.Count * 100)
         }
-        if ($FastMode)
+
+        # Do not search for ignored IDs
+        if ($CSVRule.ID -ne [FWRule]::IgnoreTag)
         {
-            # FastMode compares $CSVRules with $CurrentRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
-            # It is faster than using Get-FWRule(s) but several properties are missing, so it is ok to enable or disable rules.
+            if ($FastMode)
+            {
+                # FastMode compares $CSVRules with $CurrentRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
+                # It is faster than using Get-FWRule(s) but several properties are missing, so it is ok to enable or disable rules.
 
-            if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
+                if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
-            $CurrentRule = Find-Rule -Rules $CurrentRules -ID $CSVRule.ID
+                # Find firewall rule by ID among rules already retrieved.
+                $CurrentRule = Find-Rule -Rules $CurrentRules -ID $CSVRule.ID
 
-            # $CurrentRule is a CimInstance.
-            if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
+                # If rule was not found, search for it directly in firewall, even if it is slower.
+                if (-not $CurrentRule)
+                {
+                    $CurrentRule = Get-NetFirewallRule -ID $CSVRule.ID -ErrorAction Ignore
+                    if ($CurrentRule) { Write-Host "Warning:" $CSVRule.DisplayName "should not be in that filtered CSV file." }
+                }
+
+                if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
+            }
             else
             {
-                # In CSV file, this rule could have IgnoreTag in ID field.
-                if ($CSVRule.ID -ne [FWRule]::IgnoreTag) { Add-FWRule -NewRule $CSVRule @ForwardingParams }
-                else { Write-Host "Ignoring" $CSVRule.DisplayName }
-            }
-        }
-        else
-        {
-            # Regular mode calls Get-FWRule for each rule of CSV, it's slower than Get-NetFirewallRule but all properties are filled in and can be compared.
-            $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
+                # Regular mode calls Get-FWRule for each rule of CSV, it's slower than Get-NetFirewallRule but all properties are filled in and can be compared.
+                $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
 
-            # $CurrentRule is a FWRule object.
-            if ($CurrentRule) { Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams }
-            else
-            {
-                # In CSV file, this rule could have IgnoreTag in ID field.
-                if ($CSVRule.ID -ne [FWRule]::IgnoreTag) { Add-FWRule -NewRule $CSVRule @ForwardingParams  }
-                else { Write-Host "Ignoring" $CSVRule.DisplayName }
+                # $CurrentRule is a FWRule object.
+                if ($CurrentRule) { Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams }
             }
+
+            if (-not $CurrentRule) { Add-FWRule -NewRule $CSVRule @ForwardingParams }
         }
+        else { Write-Host "Ignoring" $CSVRule.DisplayName }
     }
 
 

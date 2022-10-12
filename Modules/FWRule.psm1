@@ -232,7 +232,7 @@ function  Add-FWRule
     $WhatIfParam = @{}
     if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
 
-    if (-not $Silent) { Write-Host "Adding rule " $NewRule.DisplayName }
+    if (-not $Silent) { Write-Host "Adding rule" $NewRule.DisplayName }
 
     $RuleParams = @{}
     # if ID is missing, it will be automatically generated
