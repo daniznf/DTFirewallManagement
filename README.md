@@ -11,7 +11,8 @@ This module exposes 2 commands:
 #### Export-FWRules
 Parses firewall rules finding properties like program, addresses, ports, etc., and exports them to a CSV file
 that can be used to update firewall using the command Update-FWRules (see below), or just prints them in shell.
-You can freely edit this CSV, editing, removing, or adding rules.
+You can freely edit this CSV, editing, removing, or adding rules.<br>
+Any field that contains the ignore tag will be ignored. This tag is written in the first line of CSV file.
 
 #### Update-FWRules
 The update script can be run often (e.g.: at boot), to avoid unwanted rules being applied, edited,

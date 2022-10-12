@@ -34,6 +34,8 @@ class FWRule
     [string]$LocalPort
     [string]$RemotePort
     [string]$Description
+
+    static [string] $IgnoreTag = "_ignore"
 }
 
 function Get-FWRules
@@ -145,8 +147,6 @@ function Parse-FWRule
         $PercentComplete
     )
 
-
-
     $ProgressParams = @{
         Activity = $Activity
         PercentComplete = $PercentComplete
@@ -234,20 +234,22 @@ function  Add-FWRule
 
     if (-not $Silent) { Write-Host "Adding rule " $NewRule.DisplayName }
 
-    New-NetFirewallRule @WhatIfParam `
-        -ID $NewRule.ID `
-        -DisplayName $NewRule.DisplayName `
-        -Program $NewRule.Program `
-        -Enabled $NewRule.Enabled `
-        -Profile $NewRule.Profile `
-        -Direction $NewRule.Direction `
-        -Action $NewRule.Action `
-        -LocalAddress $NewRule.LocalAddress `
-        -RemoteAddress $NewRule.RemoteAddress `
-        -Protocol $NewRule.Protocol `
-        -LocalPort $NewRule.LocalPort `
-        -RemotePort $NewRule.RemotePort `
-        -Description $NewRule.Description
+    $RuleParams = @{}
+    # if ID is missing, it will be automatically generated
+    if ($NewRule.ID -ne [FWRule]::IgnoreTag) { $RuleParams.Add("ID", $NewRule.ID) }
+    if ($NewRule.DisplayName -ne [FWRule]::IgnoreTag) { $RuleParams.Add("DisplayName", $NewRule.DisplayName) }
+    if ($NewRule.Program -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Program", $NewRule.Program) }
+    if ($NewRule.Enabled -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Enabled", $NewRule.Enabled) }
+    if ($NewRule.Profile -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Profile", $NewRule.Profile) }
+    if ($NewRule.Direction -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Direction", $NewRule.Direction) }
+    if ($NewRule.Action -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Action", $NewRule.Action) }
+    if ($NewRule.LocalAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalAddress", $NewRule.LocalAddress) }
+    if ($NewRule.RemoteAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemoteAddress", $NewRule.RemoteAddress) }
+    if ($NewRule.Protocol -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Protocol", $NewRule.Protocol) }
+    if ($NewRule.LocalPort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalPort", $NewRule.LocalPort) }
+    if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
+    if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
+    New-NetFirewallRule @WhatIfParam @RuleParams
 
 
     <#
@@ -291,63 +293,111 @@ function Update-FWRule
 
     if ($SourceRule.DisplayName -ne $ComparingRule.DisplayName)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName "DisplayName to" $SourceRule.DisplayName }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -NewDisplayName $SourceRule.DisplayName
+        if ($SourceRule.DisplayName -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring DisplayName of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating DisplayName of" $ComparingRule.DisplayName "to" $SourceRule.DisplayName }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -NewDisplayName $SourceRule.DisplayName
+        }
     }
     if ($SourceRule.Program -ne $ComparingRule.Program)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Program from" $ComparingRule.Program "to" $SourceRule.Program }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Program $SourceRule.Program
+        if ($SourceRule.Program -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Program of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Program of" $ComparingRule.DisplayName "from" $ComparingRule.Program "to" $SourceRule.Program }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Program $SourceRule.Program
+        }
     }
     if ($SourceRule.Enabled -ne $ComparingRule.Enabled)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Enabled from" $ComparingRule.Enabled "to" $SourceRule.Enabled }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $SourceRule.Enabled
+        if ($SourceRule.Enabled -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $SourceRule.Enabled }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $SourceRule.Enabled
+        }
     }
     if ($SourceRule.Profile -ne $ComparingRule.Profile)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Profile from" $ComparingRule.Profile "to"  $SourceRule.Profile }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Profile $SourceRule.Profile
+        if ($SourceRule.Profile -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Profile of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Profile of" $ComparingRule.DisplayName "from" $ComparingRule.Profile "to"  $SourceRule.Profile }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Profile $SourceRule.Profile
+        }
     }
     if ($SourceRule.Direction -ne $ComparingRule.Direction)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Direction from" $ComparingRule.Direction "to"  $SourceRule.Direction }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Direction $SourceRule.Direction
+        if ($SourceRule.Direction -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Direction of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Direction of" $ComparingRule.DisplayName "from" $ComparingRule.Direction "to"  $SourceRule.Direction }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Direction $SourceRule.Direction
+        }
     }
     if ($SourceRule.Action -ne $ComparingRule.Action)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Action from" $ComparingRule.Action "to"  $SourceRule.Action }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Action $SourceRule.Action
+        if ($SourceRule.Action -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Action of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Action of" $ComparingRule.DisplayName "from" $ComparingRule.Action "to"  $SourceRule.Action }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Action $SourceRule.Action
+        }
     }
     if ($SourceRule.LocalAddress -ne $ComparingRule.LocalAddress)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": LocalAddress from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $SourceRule.LocalAddress
+        if ($SourceRule.LocalAddress -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring LocalAddress of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating LocalAddress of" $ComparingRule.DisplayName "from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $SourceRule.LocalAddress
+        }
     }
     if ($SourceRule.RemoteAddress -ne $ComparingRule.RemoteAddress)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": RemoteAddress from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $SourceRule.RemoteAddress
+        if ($SourceRule.RemoteAddress -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring RemoteAddress of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating RemoteAddress of" $ComparingRule.DisplayName "from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $SourceRule.RemoteAddress
+        }
     }
     if ($SourceRule.Protocol -ne $ComparingRule.Protocol)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": Protocol from" $ComparingRule.Protocol "to"  $SourceRule.Protocol }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Protocol $SourceRule.Protocol
+        if ($SourceRule.Protocol -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Protocol of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Protocol of" $ComparingRule.DisplayName "from" $ComparingRule.Protocol "to"  $SourceRule.Protocol }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Protocol $SourceRule.Protocol
+        }
     }
     if ($SourceRule.LocalPort -ne $ComparingRule.LocalPort)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": LocalPort from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $SourceRule.LocalPort
+        if ($SourceRule.LocalPort -eq [FWRule]::IgnoreTag){ Write-Host "Ignoring LocalPort of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating LocalPort of" $ComparingRule.DisplayName "from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $SourceRule.LocalPort
+        }
     }
     if ($SourceRule.RemotePort -ne $ComparingRule.RemotePort)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName ": RemotePort from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $SourceRule.RemotePort
+        if ($SourceRule.RemotePort -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring RemotePort of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating RemotePort of" $ComparingRule.DisplayName "from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $SourceRule.RemotePort
+        }
     }
     if ($SourceRule.Description -ne $ComparingRule.Description)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName "Description to" $SourceRule.Description }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Description $SourceRule.Description
+        if ($SourceRule.Description -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Description of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Description of" $ComparingRule.DisplayName "to" $SourceRule.Description }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Description $SourceRule.Description
+        }
     }
 
     <#
@@ -392,8 +442,12 @@ function Update-EnabledValue
 
     if ($Enabled -ne $ComparingRule.Enabled)
     {
-        if (-not $Silent) { Write-Host "Updating" $ComparingRule.DisplayName " Enabled from" $ComparingRule.Enabled "to" $Enabled }
-        Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $Enabled
+        if ($Enabled -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        else
+        {
+            if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $Enabled }
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $Enabled
+        }
     }
 
     <#
@@ -411,5 +465,7 @@ function Update-EnabledValue
         Do not actually modify firewall.
     #>
 }
+
+# `
 
 Export-ModuleMember -Function Get-FWRules, Get-FWRule, Update-FWRule, Update-EnabledValue, Add-FWRule

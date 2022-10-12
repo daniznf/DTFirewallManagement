@@ -47,7 +47,7 @@ function Export-FWRules {
     $DefaultRule = [FWRule]::new()
     $DefaultRule.ID = "DefaultRule"
     $DefaultRule.DisplayName = "Default Rule"
-    $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!!"
+    $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
     $DefaultRule.Program = "DTFirewallManagement"
     $DefaultRule.Enabled = $Enabled
     $DefaultRule.Direction = $Direction
@@ -132,6 +132,95 @@ function Export-FWRules {
 
 }
 
+function Find-Rule {
+    param (
+        [Parameter(Mandatory)]
+        [Array]
+        $Rules,
+
+        [string]
+        $ID = "",
+
+        [string]
+        $DisplayName = "",
+
+        [string]
+        $Description = "",
+
+        [string]
+        $Enabled = "",
+
+        [string]
+        $RProfile = "",
+
+        [string]
+        $Direction = "",
+
+        [string]
+        $Action = ""
+    )
+
+    $RuleToReturn = $null
+    for ($i = 0; $i -lt $Rules.Length; $i++)
+    {
+        $Rule = $Rules[$i]
+        if ((($ID -eq "") -or ($ID -eq $Rule.ID) -or ($ID -eq $Rule.InstanceID)) -and
+            (($DisplayName -eq "") -or ($DisplayName -eq $Rule.DisplayName)) -and
+            (($Description -eq "") -or ($Description -eq $Rule.Description)) -and
+            (($Enabled -eq "") -or ($Enabled -eq $Rule.Enabled)) -and
+            (($RProfile -eq "") -or ($RProfile -eq $Rule.Profile)) -and
+            (($Direction -eq "") -or ($Direction -eq $Rule.Direction)) -and
+            (($Action -eq "") -or ($Action -eq $Rule.Action)))
+        {
+            $RuleToReturn = $Rule
+            break
+        }
+    }
+    return $RuleToReturn
+
+    <#
+    .SYNOPSIS
+        Finds a rule that matches given parameters.
+
+    .DESCRIPTION
+        Rule can be searched passing any combination of parameters.
+
+    .PARAMETER Rules
+        An array of rules of type Ciminstance or FWRule.
+
+    .PARAMETER ID
+        ID that has to match the rule to be found.
+
+    .PARAMETER DisplayName
+        DisplayName that has to match the rule to be found.
+
+    .PARAMETER Description
+        Description that has to match the rule to be found.
+
+    .PARAMETER Enabled
+        Enabledthat has to match the rule to be found.
+
+    .PARAMETER RProfile
+        Profile that has to match the rule to be found.
+
+    .PARAMETER Direction
+        Direction that has to match the rule to be found.
+
+    .PARAMETER Action
+        Action that has to match the rule to be found.
+
+    .OUTPUTS
+        A rule corresponding to search parameters, if found, or $null if not found.
+        The type of this rule matches the array passed with Rules parameter.
+
+    .EXAMPLE
+        Find-Rule -Rules (Get-NetFirewallRule) -ID "MyRuleID"
+
+    .EXAMPLE
+        Find-Rule -Rules (Get-FWRules) -ID "MyRuleID"
+    #>
+}
+
 function Update-FWRules
 {
     param (
@@ -166,10 +255,7 @@ function Update-FWRules
         $Enabled = $DefaultRule.Enabled
         $Direction = $DefaultRule.Direction
     }
-    else
-    {
-        throw "Cannot read default rule in csv, please run Export-FWRules.ps1"
-    }
+    else { throw "Cannot read default rule in csv, please run Export-FWRules.ps1" }
 
     $ForwardingParams = @{}
     if ($WhatIf) { $ForwardingParams.Add("WhatIf", $WhatIf) }
@@ -180,7 +266,6 @@ function Update-FWRules
     if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
     if ($Direction) { $GNFR.Add("Direction", $Direction) }
 
-    $CSVRuleIDs = [string[]] ( $CSVRules | ForEach-Object ID )
 
     if (-not $Silent)
     {
@@ -197,60 +282,71 @@ function Update-FWRules
         Write-Host "..."
     }
 
-    # Much Faster than Get-FWRules
+    # Get all current firewall rules.
     $CurrentRules = Get-NetFirewallRule @GNFR
 
-    # Disable all rules that are not present in CSV
+    # Disable all firewall rules that are not present in CSV.
     for ($i = 0; $i -lt $CurrentRules.Count; $i++)
     {
         $CurrentRule = $CurrentRules[$i]
-        if (-not ($CSVRuleIDs.Contains($CurrentRule.InstanceID)))
+
+        $CSVRule = Find-Rule -Rules $CSVRules -ID $CurrentRule.InstanceID
+        if (-not $CSVRule)
         {
-            if ($CurrentRule.Enabled.ToString() -eq "True")
-            {
-                Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams
-            }
+            # if $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID
+            $CSVRule = Find-Rule -Rules $CSVRules -ID ([FWRule]::IgnoreTag) `
+                        -DisplayName $CurrentRule.DisplayName `
+                        -Description $CurrentRule.Description `
+                        -Enabled $CurrentRule.Enabled `
+                        -RProfile $CurrentRule.Profile `
+                        -Direction $CurrentRule.Direction `
+                        -Action $CurrentRule.Action
+            if (-not $CSVRule) { Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams }
+            else { Write-Host "Ignoring" $CurrentRule.DisplayName }
         }
     }
 
     # Update all rules that match by ID, or create new ones
-    for ($i = 1; $i -lt $CSVRuleIDs.Count; $i++)
+    for ($i = 1; $i -lt $CSVRules.Count; $i++)
     {
         # $i = 0 is DefaultRule
         $CSVRule = $CSVRules[$i]
 
         if (-not $Silent) {
             $Activity = "Parsing rule " + $CSVRule.DisplayName
-            $PercentComplete = ($i / $CSVRuleIDs.Count * 100)
+            $PercentComplete = ($i / $CSVRules.Count * 100)
         }
         if ($FastMode)
         {
+            # FastMode compares $CSVRules with $CurrentRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
+            # It is faster than using Get-FWRule(s) but several properties are missing, so it is ok to enable or disable rules.
 
             if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
-            $CurrentRule = $null
-            # Search for corresponding rule in CurrentRules (cannot trust the order of CSVRules)
-            for ($j = 0; $j -lt $CurrentRules.Count; $j++)
-            {
-                $SearchingRule = $CurrentRules[$j]
-                if ($SearchingRule.InstanceID -eq $CSVRule.ID)
-                {
-                    $CurrentRule = $SearchingRule
-                    break
-                }
-            }
+            $CurrentRule = Find-Rule -Rules $CurrentRules -ID $CSVRule.ID
 
-            # $CurrentRule is a CimInstance directly from firewall, faster than Get-FWRule but several properties are missing, so it can (nearly) only be enabled/disabled.
+            # $CurrentRule is a CimInstance.
             if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
-            else { Add-FWRule -NewRule $CSVRule @ForwardingParams }
+            else
+            {
+                # In CSV file, this rule could have IgnoreTag in ID field.
+                if ($CSVRule.ID -ne [FWRule]::IgnoreTag) { Add-FWRule -NewRule $CSVRule @ForwardingParams }
+                else { Write-Host "Ignoring" $CSVRule.DisplayName }
+            }
         }
         else
         {
+            # Regular mode calls Get-FWRule for each rule of CSV, it's slower than Get-NetFirewallRule but all properties are filled in and can be compared.
             $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
 
-            # $CurrentRule is a FWRule object from FWRule module, slower than Get-NetFirewallRule but all properties are filled in and can be compared.
+            # $CurrentRule is a FWRule object.
             if ($CurrentRule) { Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams }
-            else { Add-FWRule -NewRule $CSVRule @ForwardingParams }
+            else
+            {
+                # In CSV file, this rule could have IgnoreTag in ID field.
+                if ($CSVRule.ID -ne [FWRule]::IgnoreTag) { Add-FWRule -NewRule $CSVRule @ForwardingParams  }
+                else { Write-Host "Ignoring" $CSVRule.DisplayName }
+            }
         }
     }
 
@@ -293,5 +389,3 @@ function Update-FWRules
 
 
 Export-ModuleMember -Function Export-FWRules, Update-FWRules
-
-
