@@ -266,7 +266,6 @@ function Update-FWRules
     if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
     if ($Direction) { $GNFR.Add("Direction", $Direction) }
 
-
     if (-not $Silent)
     {
         Write-Host "Reading current firewall rules" -NoNewline
@@ -283,12 +282,15 @@ function Update-FWRules
     }
 
     # Get all current firewall rules.
-    $CurrentRules = Get-NetFirewallRule @GNFR
+    $FirewallRules = Get-NetFirewallRule
+
+    # Filter firewall rules with CSV filters
+    $FilteredRules =  Get-NetFirewallRule @GNFR
 
     # Disable all firewall rules that are not present in CSV.
-    for ($i = 0; $i -lt $CurrentRules.Count; $i++)
+    for ($i = 0; $i -lt $FilteredRules.Count; $i++)
     {
-        $CurrentRule = $CurrentRules[$i]
+        $CurrentRule = $FilteredRules[$i]
 
         $CSVRule = Find-Rule -Rules $CSVRules -ID $CurrentRule.InstanceID
         if (-not $CSVRule)
@@ -301,8 +303,9 @@ function Update-FWRules
                         -RProfile $CurrentRule.Profile `
                         -Direction $CurrentRule.Direction `
                         -Action $CurrentRule.Action
-            if (-not $CSVRule) { Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams }
-            else { Write-Host "Ignoring" $CurrentRule.DisplayName }
+
+            if ($CSVRule) { Write-Host "Ignoring" $CurrentRule.DisplayName }
+            else { Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams }
         }
     }
 
@@ -318,25 +321,19 @@ function Update-FWRules
         }
 
         # Do not search for ignored IDs
-        if ($CSVRule.ID -ne [FWRule]::IgnoreTag)
+        if ($CSVRule.ID -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring" $CSVRule.DisplayName }
+        else
         {
             if ($FastMode)
             {
-                # FastMode compares $CSVRules with $CurrentRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
+                # FastMode compares $CSVRules with $FilteredRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
                 # It is faster than using Get-FWRule(s) but several properties are missing, so it is ok to enable or disable rules.
 
                 if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
-                # Find firewall rule by ID among rules already retrieved.
-                $CurrentRule = Find-Rule -Rules $CurrentRules -ID $CSVRule.ID
+                $CurrentRule = Find-Rule -Rules $FirewallRules -ID $CSVRule.ID
 
-                # If rule was not found, search for it directly in firewall, even if it is slower.
-                if (-not $CurrentRule)
-                {
-                    $CurrentRule = Get-NetFirewallRule -ID $CSVRule.ID -ErrorAction Ignore
-                    if ($CurrentRule) { Write-Host "Warning:" $CSVRule.DisplayName "should not be in that filtered CSV file." }
-                }
-
+                # $CurrentRule is a CimInstance object.
                 if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
             }
             else
@@ -350,7 +347,6 @@ function Update-FWRules
 
             if (-not $CurrentRule) { Add-FWRule -NewRule $CSVRule @ForwardingParams }
         }
-        else { Write-Host "Ignoring" $CSVRule.DisplayName }
     }
 
 

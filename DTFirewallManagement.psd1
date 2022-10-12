@@ -8,7 +8,7 @@
 RootModule = 'DTFirewallManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.13.1'
+ModuleVersion = '0.13.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
