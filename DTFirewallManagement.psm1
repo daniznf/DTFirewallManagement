@@ -26,34 +26,47 @@ function Export-FWRules {
         $PathCSV,
 
         [string]
+        $DisplayName,
+
         [ValidateSet("Allow", "Block")]
+        [string]
         $Action,
 
-        [string]
         [ValidateSet("True", "False")]
+        [string]
         $Enabled,
 
-        [string]
         [ValidateSet("Inbound", "Outbound")]
-        $Direction,
-
         [string]
-        $DisplayName
+        $Direction
     )
 
     $GFR = @{}
-    if ($DisplayName){ $GFR.Add("DisplayName", $DisplayName) }
-    else
-    {
+    if ($DisplayName) { $GFR.Add("DisplayName", $DisplayName) }
         if ($Action) { $GFR.Add("Action", $Action) }
         if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
         if ($Direction) { $GFR.Add("Direction", $Direction) }
+
+    $Rules = Get-FWRules @GFR
+    # if only one rule is found, $Rules is not an array
+    if ($Rules -isnot [System.Array]) { $Rules = @($Rules) }
+
+    $RuleList = New-Object System.Collections.ArrayList
+
+    if ($PathCSV)
+    {
+        if (Test-Path $PathCSV)
+        {
+            $overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
+
+            if (($overwrite -eq "y") -or ($overwrite -eq "yes")) { Remove-Item $PathCSV }
+            else { throw "Rules have not been written to File!" }
     }
 
     # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
     $DefaultRule = [FWRule]::new()
     $DefaultRule.ID = "DefaultRule"
-    $DefaultRule.DisplayName = "Default Rule"
+        $DefaultRule.DisplayName = $DisplayName
     $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
     $DefaultRule.Program = "DTFirewallManagement"
     $DefaultRule.Enabled = $Enabled
@@ -66,36 +79,16 @@ function Export-FWRules {
     $DefaultRule.LocalPort =  ""
     $DefaultRule.RemotePort =  ""
 
-    $RuleList = New-Object System.Collections.ArrayList
     $RuleList.Add($DefaultRule) > $null
 
-    if ($PathCSV)
-    {
-        if (Test-Path $PathCSV)
-        {
-            $overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
+        if ($Rules) { $RuleList.AddRange($Rules) }
 
-            if (($overwrite -eq "y") -or ($overwrite -eq "yes"))
-            {
-                Remove-Item $PathCSV
-            }
-            else
-            {
-                throw "Rules have not been written to File!"
-            }
-        }
-    }
-
-    $Rules = Get-FWRules @GFR
-    $RuleList.AddRange($Rules)
-
-    if ($PathCSV)
-    {
         $RuleList | Export-Csv $PathCSV -NoTypeInformation
         Write-Host "Exported" $PathCSV
     }
     else
     {
+        if ($Rules) { $RuleList.AddRange($Rules) }
         $RuleList
     }
 

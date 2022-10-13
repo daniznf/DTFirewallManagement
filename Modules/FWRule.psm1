@@ -59,15 +59,18 @@ function Get-FWRules
     )
 
     $GNFR = @{}
-    if ($DisplayName) { $GNFR.Add("DisplayName", $DisplayName) }
-    else
-    {
-        if ($Action) { $GNFR.Add("Action", $Action) }
-        if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
-        if ($Direction) { $GNFR.Add("Direction", $Direction) }
-    }
+
+    if ($Action) { $GNFR.Add("Action", $Action) }
+    if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
+    if ($Direction) { $GNFR.Add("Direction", $Direction) }
 
     $NFRules = Get-NetFirewallRule @GNFR
+
+    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
+
+    # if only one rule is found, $NFRules is not an array
+    if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
+
     $NFRulesCount = $NFRules.Count
 
     $OutRules = New-Object System.Collections.ArrayList
