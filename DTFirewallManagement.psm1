@@ -43,9 +43,9 @@ function Export-FWRules {
 
     $GFR = @{}
     if ($DisplayName) { $GFR.Add("DisplayName", $DisplayName) }
-        if ($Action) { $GFR.Add("Action", $Action) }
-        if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
-        if ($Direction) { $GFR.Add("Direction", $Direction) }
+    if ($Action) { $GFR.Add("Action", $Action) }
+    if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
+    if ($Direction) { $GFR.Add("Direction", $Direction) }
 
     $Rules = Get-FWRules @GFR
     # if only one rule is found, $Rules is not an array
@@ -61,25 +61,25 @@ function Export-FWRules {
 
             if (($overwrite -eq "y") -or ($overwrite -eq "yes")) { Remove-Item $PathCSV }
             else { throw "Rules have not been written to File!" }
-    }
+        }
 
-    # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
-    $DefaultRule = [FWRule]::new()
-    $DefaultRule.ID = "DefaultRule"
+        # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
+        $DefaultRule = [FWRule]::new()
+        $DefaultRule.ID = "DefaultRule"
         $DefaultRule.DisplayName = $DisplayName
-    $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
-    $DefaultRule.Program = "DTFirewallManagement"
-    $DefaultRule.Enabled = $Enabled
-    $DefaultRule.Direction = $Direction
-    $DefaultRule.Action = $Action
-    $DefaultRule.Profile = ""
-    $DefaultRule.LocalAddress =  ""
-    $DefaultRule.RemoteAddress =  ""
-    $DefaultRule.Protocol =  ""
-    $DefaultRule.LocalPort =  ""
-    $DefaultRule.RemotePort =  ""
+        $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
+        $DefaultRule.Program = "DTFirewallManagement"
+        $DefaultRule.Enabled = $Enabled
+        $DefaultRule.Direction = $Direction
+        $DefaultRule.Action = $Action
+        $DefaultRule.Profile = ""
+        $DefaultRule.LocalAddress =  ""
+        $DefaultRule.RemoteAddress =  ""
+        $DefaultRule.Protocol =  ""
+        $DefaultRule.LocalPort =  ""
+        $DefaultRule.RemotePort =  ""
 
-    $RuleList.Add($DefaultRule) > $null
+        $RuleList.Add($DefaultRule) > $null
 
         if ($Rules) { $RuleList.AddRange($Rules) }
 
@@ -239,10 +239,11 @@ function Update-FWRules
         $FastMode
     )
 
-    if (-not (Test-Path $PathCSV))
-    {
-        throw [System.IO.FileNotFoundException]::new("Cannot find Rules CSV file!")
-    }
+    $ForwardingParams = @{}
+    if ($WhatIf) { $ForwardingParams.Add("WhatIf", $WhatIf) }
+    if ($Silent) { $ForwardingParams.Add("Silent", $Silent) }
+
+    if (-not (Test-Path $PathCSV)) { throw [System.IO.FileNotFoundException]::new("Cannot find Rules CSV file!") }
 
     if (-not $Silent) { Write-Host "Reading $PathCSV..." }
     $CSVRules = Import-Csv $PathCSV
@@ -251,15 +252,12 @@ function Update-FWRules
     $DefaultRule = $CSVRules[0]
     if ($DefaultRule.ID -eq "DefaultRule")
     {
+        $DisplayName = $DefaultRule.DisplayName
         $Action = $DefaultRule.Action
         $Enabled = $DefaultRule.Enabled
         $Direction = $DefaultRule.Direction
     }
-    else { throw "Cannot read default rule in csv, please run Export-FWRules.ps1" }
-
-    $ForwardingParams = @{}
-    if ($WhatIf) { $ForwardingParams.Add("WhatIf", $WhatIf) }
-    if ($Silent) { $ForwardingParams.Add("Silent", $Silent) }
+    else { throw "Cannot find default rule in csv, please run Export-FWRules.ps1" }
 
     $GNFR = @{}
     if ($Action) { $GNFR.Add("Action", $Action) }
@@ -269,14 +267,25 @@ function Update-FWRules
     if (-not $Silent)
     {
         Write-Host "Reading current firewall rules" -NoNewline
-        if ($Action -or $Enabled -or $Direction)
+        if ($DisplayName -or $Action -or $Enabled -or $Direction)
         {
             Write-Host " with filters: "  -NoNewline
-            if ($Action) { Write-Host "Action" $Action -NoNewline }
-            if ($Action -and ($Enabled -or $Direction)) { Write-Host ", " -NoNewline }
-            if ($Enabled) { Write-Host "Enabled" $Enabled -NoNewline }
-            if (($Action -or $Enabled) -and $Direction) { Write-Host ", " -NoNewline }
-            if ($Direction) { Write-Host "Direction" $Direction -NoNewline }
+            if ($DisplayName) { Write-Host "DisplayName" $DisplayName -NoNewline }
+            if ($Action)
+            {
+                if ($DisplayName) { Write-Host ", " -NoNewline }
+                Write-Host "Action" $Action -NoNewline
+            }
+            if ($Enabled)
+            {
+                if ($DisplayName -or $Action) { Write-Host ", " -NoNewline }
+                Write-Host "Enabled" $Enabled -NoNewline
+            }
+            if ($Direction)
+            {
+                if ($DisplayName -or $Action -or $Enabled) { Write-Host ", " -NoNewline }
+                Write-Host "Direction" $Direction -NoNewline
+            }
         }
         Write-Host "..."
     }
@@ -286,6 +295,11 @@ function Update-FWRules
 
     # Filter firewall rules with CSV filters
     $FilteredRules =  Get-NetFirewallRule @GNFR
+
+    if ($DisplayName) { $FilteredRules = $FilteredRules | Where-Object { $_.DisplayName -match $DisplayName } }
+
+    # if only one rule is found, $FilteredRules is not an array
+    if ($FilteredRules -isnot [System.Array]) { $FilteredRules = @($FilteredRules) }
 
     # Disable all firewall rules that are not present in CSV.
     for ($i = 0; $i -lt $FilteredRules.Count; $i++)
