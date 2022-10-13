@@ -35,13 +35,20 @@ function Export-FWRules {
 
         [string]
         [ValidateSet("Inbound", "Outbound")]
-        $Direction
+        $Direction,
+
+        [string]
+        $DisplayName
     )
 
     $GFR = @{}
-    if ($Action) { $GFR.Add("Action", $Action) }
-    if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GFR.Add("Direction", $Direction) }
+    if ($DisplayName){ $GFR.Add("DisplayName", $DisplayName) }
+    else
+    {
+        if ($Action) { $GFR.Add("Action", $Action) }
+        if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
+        if ($Direction) { $GFR.Add("Direction", $Direction) }
+    }
 
     # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
     $DefaultRule = [FWRule]::new()
@@ -106,16 +113,16 @@ function Export-FWRules {
         If not passed, rules will just be printed out in stdout.
 
     .PARAMETER Action
-        Read only rules with this Action value
+        Exports only rules with this Action value
 
     .PARAMETER Enabled
-        Read only rules with this Enabled value
+        Exports only rules with this Enabled value
 
     .PARAMETER Direction
-        Read only rules with this Direction value
+        Exports only rules with this Direction value
 
-    .PARAMETER Version
-        Show script version
+    .PARAMETER DisplayName
+        Exports only rules with this DisplayName
 
     .EXAMPLE
         Export-FWRules

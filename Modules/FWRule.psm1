@@ -52,13 +52,20 @@ function Get-FWRules
 
         [string]
         [ValidateSet("Inbound", "Outbound")]
-        $Direction
+        $Direction,
+
+        [string]
+        $DisplayName
     )
 
     $GNFR = @{}
-    if ($Action) { $GNFR.Add("Action", $Action) }
-    if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFR.Add("Direction", $Direction) }
+    if ($DisplayName) { $GNFR.Add("DisplayName", $DisplayName) }
+    else
+    {
+        if ($Action) { $GNFR.Add("Action", $Action) }
+        if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
+        if ($Direction) { $GNFR.Add("Direction", $Direction) }
+    }
 
     $NFRules = Get-NetFirewallRule @GNFR
     $NFRulesCount = $NFRules.Count
@@ -80,6 +87,18 @@ function Get-FWRules
     <#
     .SYNOPSIS
         Returns all firewall rules that match given arguments.
+
+    .PARAMETER Action
+        Return all rules with corresponding Action value.
+
+    .PARAMETER Enabled
+        Return all rules with corresponding Enabled value.
+
+    .PARAMETER Direction
+        Return all rules with corresponding Direction value.
+
+    .PARAMETER DisplayName
+        Return all rules with corresponding DisplayName value.
 
     .OUTPUTS
         A list of objects of type FWRule.
