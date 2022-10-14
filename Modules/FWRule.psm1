@@ -68,7 +68,7 @@ function Get-FWRules
 
     if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
 
-    # if only one rule is found, $NFRules is not an array
+    # If only one rule is found, $NFRules is not an array.
     if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
 
     $NFRulesCount = $NFRules.Count
@@ -92,16 +92,16 @@ function Get-FWRules
         Returns all firewall rules that match given arguments.
 
     .PARAMETER Action
-        Return all rules with corresponding Action value.
+        Return all rules with equal Action value.
 
     .PARAMETER Enabled
-        Return all rules with corresponding Enabled value.
+        Return all rules with equal Enabled value.
 
     .PARAMETER Direction
-        Return all rules with corresponding Direction value.
+        Return all rules with equal Direction value.
 
     .PARAMETER DisplayName
-        Return all rules with corresponding DisplayName value.
+        Return all rules with matching DisplayName value.
 
     .OUTPUTS
         A list of objects of type FWRule.
@@ -257,7 +257,7 @@ function  Add-FWRule
     if (-not $Silent) { Write-Host "Adding rule" $NewRule.DisplayName }
 
     $RuleParams = @{}
-    # if ID is missing, it will be automatically generated
+    # If ID is missing, it will be automatically generated.
     if ($NewRule.ID -ne [FWRule]::IgnoreTag) { $RuleParams.Add("ID", $NewRule.ID) }
     if ($NewRule.DisplayName -ne [FWRule]::IgnoreTag) { $RuleParams.Add("DisplayName", $NewRule.DisplayName) }
     if ($NewRule.Program -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Program", $NewRule.Program) }
@@ -276,7 +276,7 @@ function  Add-FWRule
 
     <#
     .SYNOPSIS
-        Adds a new NetFirewallRule to firewall with values from NewRule.
+        Adds a new NetFirewallRule to firewall with values copied from NewRule.
 
     .PARAMETER NewRule
         An object of type FWRule with all informations necessary to add a new rule to firewall.
@@ -424,13 +424,13 @@ function Update-FWRule
 
     <#
     .SYNOPSIS
-        Updates the NetFirewallRule (matched by ID of ComparingRule) with values from SourceRule, if they do not match values in ComparingRule.
+        Updates the NetFirewallRule (searched by ID) with values from SourceRule, if they are not equal to values in ComparingRule.
 
     .PARAMETER SourceRule
-        FWRule object to copy values from.
+        FWRule object to compare (and copy) values from.
 
     .PARAMETER ComparingRule
-        FWRule object to check values against.
+        FWRule object to compare values against.
 
     .PARAMETER Silent
         Do not write anything but errors.

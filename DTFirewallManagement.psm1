@@ -56,14 +56,14 @@ function Export-FWRules {
     }
 
     $Rules = Get-FWRules @GFR
-    # if only one rule is found, $Rules is not an array
+    # If only one rule is found, $Rules is not an array.
     if ($Rules -isnot [System.Array]) { $Rules = @($Rules) }
 
     $RuleList = New-Object System.Collections.ArrayList
 
     if ($PathCSV)
     {
-        # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
+        # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported.
         $DefaultRule = [FWRule]::new()
         $DefaultRule.ID = "DefaultRule"
         $DefaultRule.DisplayName = $DisplayName
@@ -106,16 +106,16 @@ function Export-FWRules {
         If not passed, rules will just be printed out in stdout.
 
     .PARAMETER Action
-        Exports only rules with this Action value
+        Exports only rules with this Action value.
 
     .PARAMETER Enabled
-        Exports only rules with this Enabled value
+        Exports only rules with this Enabled value.
 
     .PARAMETER Direction
-        Exports only rules with this Direction value
+        Exports only rules with this Direction value.
 
     .PARAMETER DisplayName
-        Exports only rules with this DisplayName
+        Exports only rules with a DisplayName that matches this value.
 
     .EXAMPLE
         Export-FWRules
@@ -127,9 +127,8 @@ function Export-FWRules {
 
     .EXAMPLE
         Export-FWRules -PathCSV "$env:USERPROFILE\Desktop\Filtered_Rules.csv" -Enabled True -Action Allow -Profile Private -Direction Inbound
-        Exports into Filtered_Rules.csv all enabled rules that allow traffic in Private profile in inbound direction.
+        Exports into Filtered_Rules.csv all enabled rules that allow traffic in private profile in inbound direction.
     #>
-
 }
 
 function Find-Rule {
@@ -180,38 +179,38 @@ function Find-Rule {
 
     <#
     .SYNOPSIS
-        Finds a rule that matches given parameters.
+        Finds a rule with parameters equal to given ones.
 
     .DESCRIPTION
         Rule can be searched passing any combination of parameters.
 
     .PARAMETER Rules
-        An array of rules of type Ciminstance or FWRule.
+        An array of rules of type CimInstance or FWRule.
 
     .PARAMETER ID
-        ID that has to match the rule to be found.
+        ID that has to be equal to the ID of the rule to be found.
 
     .PARAMETER DisplayName
-        DisplayName that has to match the rule to be found.
+        DisplayName that has to be equal to the DisplayName of the rule to be found.
 
     .PARAMETER Description
-        Description that has to match the rule to be found.
+        Description that has to be equal to the Description of the rule to be found.
 
     .PARAMETER Enabled
-        Enabledthat has to match the rule to be found.
+        Enabled value that has to be equal to the Enabled value of the rule to be found.
 
     .PARAMETER RProfile
-        Profile that has to match the rule to be found.
+        Profile value that has to be equal to the Profile value of the rule to be found.
 
     .PARAMETER Direction
-        Direction that has to match the rule to be found.
+        Direction value that has to be equal to the Direction value of the rule to be found.
 
     .PARAMETER Action
-        Action that has to match the rule to be found.
+        Action value that has to be equal to the Action value of the rule to be found.
 
     .OUTPUTS
-        A rule corresponding to search parameters, if found, or $null if not found.
-        The type of this rule matches the array passed with Rules parameter.
+        The first rule corresponding to search parameters, if found, or $null if not found.
+        The type of this rule matches the array passed in Rules parameter.
 
     .EXAMPLE
         Find-Rule -Rules (Get-NetFirewallRule) -ID "MyRuleID"
@@ -248,7 +247,7 @@ function Update-FWRules
     if (-not $Silent) { Write-Host "Reading $PathCSV..." }
     $CSVRules = Import-Csv $PathCSV
 
-    # Use default rule written in csv to know which filters were used during export, then update rules with the same filters
+    # Use default rule written in csv to know which filters were used during export, then update rules with the same filters.
     $DefaultRule = $CSVRules[0]
     if ($DefaultRule.ID -eq "DefaultRule")
     {
@@ -293,12 +292,11 @@ function Update-FWRules
     # Get all current firewall rules.
     $FirewallRules = Get-NetFirewallRule
 
-    # Filter firewall rules with CSV filters
+    # Filter firewall rules with CSV filters.
     $FilteredRules =  Get-NetFirewallRule @GNFR
-
     if ($DisplayName) { $FilteredRules = $FilteredRules | Where-Object { $_.DisplayName -match $DisplayName } }
 
-    # if only one rule is found, $FilteredRules is not an array
+    # If only one rule is found, $FilteredRules is not an array.
     if ($FilteredRules -isnot [System.Array]) { $FilteredRules = @($FilteredRules) }
 
     # Disable all firewall rules that are not present in CSV.
@@ -309,7 +307,7 @@ function Update-FWRules
         $CSVRule = Find-Rule -Rules $CSVRules -ID $CurrentRule.InstanceID
         if (-not $CSVRule)
         {
-            # if $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID
+            # If $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID.
             $CSVRule = Find-Rule -Rules $CSVRules -ID ([FWRule]::IgnoreTag) `
                         -DisplayName $CurrentRule.DisplayName `
                         -Description $CurrentRule.Description `
@@ -323,7 +321,7 @@ function Update-FWRules
         }
     }
 
-    # Update all rules that match by ID, or create new ones
+    # Update all rules with the same ID, or create new ones.
     for ($i = 1; $i -lt $CSVRules.Count; $i++)
     {
         # $i = 0 is DefaultRule
@@ -334,14 +332,14 @@ function Update-FWRules
             $PercentComplete = ($i / $CSVRules.Count * 100)
         }
 
-        # Do not search for ignored IDs
+        # Do not search for ignored IDs.
         if ($CSVRule.ID -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring" $CSVRule.DisplayName }
         else
         {
             if ($FastMode)
             {
                 # FastMode compares $CSVRules with $FilteredRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
-                # It is faster than using Get-FWRule(s) but several properties are missing, so it is ok to enable or disable rules.
+                # It is faster than using Get-FWRule(s) but several properties are missing from each rule, so it is ok to enable or disable rules.
 
                 if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
@@ -366,13 +364,13 @@ function Update-FWRules
 
     <#
     .SYNOPSIS
-        Updates firewall rules with matching values in CSV file.
+        Updates firewall rules with corresponding values in CSV file.
 
     .DESCRIPTION
         Rules present only in CSV files will be added (and enabled).
-        Rules present only in Firewall will be disabled (never deleted).
-        Rules present in both CSV and Firewall will be updated as per CSV file.
-        Please use Export-FWRules, first, to export the CSV files with rules of your firewall
+        Rules present only in firewall will be disabled (never deleted).
+        Rules present in both CSV and firewall will be updated as per CSV file.
+        Please use Export-FWRules, first, to export the CSV files with rules of your firewall.
 
     .PARAMETER PathCSV
         Complete path of CSV file containing rules to check.
@@ -388,15 +386,15 @@ function Update-FWRules
 
     .EXAMPLE
         Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv"
-        Imports rules from Rules.csv in user's desktop and updates firewall consequently.
+        Reads rules Rules.csv, in user's desktop, and updates firewall consequently.
 
     .EXAMPLE
         Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -WhatIf
-        Only simulate changes in Firewall, but do not actually modify it.
+        Only simulate changes in firewall, but do not actually modify it.
 
     .EXAMPLE
         Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -FastMode
-        Fast check and update only Enabled value
+        Fast check and update only Enabled values.
     #>
 }
 

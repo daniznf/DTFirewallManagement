@@ -15,14 +15,14 @@ You can freely edit this CSV, editing, removing, or adding rules.<br>
 Any field that contains the ignore tag will be ignored. This tag is written in the first line of CSV file.
 
 #### Update-FWRules
-The update script can be run often (e.g.: at boot), to avoid unwanted rules being applied, edited,
+The update script can be run often (e.g.: at boot), to avoid unwanted rules from being applied, edited,
 or removed by other softwares when you didn't want to.
 A CSV must be passed to the script to let it know what rules must be enabled, disabled or updated.
 That CSV may be exported by using the above mentioned Export-FWRules. <br/>
 Rules existing only in CSV files will be added (and enabled). <br/>
 Rules existing only in firewall will be disabled (never deleted). <br/>
 Rules existing in both CSV and firewall will be updated as per CSV file
-(when using FastMode they will only be enabled/disabled).
+(when using FastMode they will only be enabled, disabled or added).
 
 
 ### More Help
