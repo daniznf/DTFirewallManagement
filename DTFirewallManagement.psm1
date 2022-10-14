@@ -47,6 +47,14 @@ function Export-FWRules {
     if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
     if ($Direction) { $GFR.Add("Direction", $Direction) }
 
+    if ($PathCSV -and (Test-Path $PathCSV))
+    {
+        $Overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
+
+        if (($Overwrite -eq "y") -or ($Overwrite -eq "yes")) { Remove-Item $PathCSV -ErrorAction Stop}
+        else { throw "Rules have not been written to File!" }
+    }
+
     $Rules = Get-FWRules @GFR
     # if only one rule is found, $Rules is not an array
     if ($Rules -isnot [System.Array]) { $Rules = @($Rules) }
@@ -55,14 +63,6 @@ function Export-FWRules {
 
     if ($PathCSV)
     {
-        if (Test-Path $PathCSV)
-        {
-            $overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
-
-            if (($overwrite -eq "y") -or ($overwrite -eq "yes")) { Remove-Item $PathCSV }
-            else { throw "Rules have not been written to File!" }
-        }
-
         # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported
         $DefaultRule = [FWRule]::new()
         $DefaultRule.ID = "DefaultRule"
