@@ -187,8 +187,18 @@ function Parse-FWRule
 
     if ($Activity) { Write-Progress -CurrentOperation "Address" @ProgressParams }
     $Address = $NFRule | Get-NetFirewallAddressFilter
-    $LocalAddress = $Address.LocalAddress
-    $RemoteAddress = $Address.RemoteAddress
+
+    if ($Address.LocalAddress -is [System.Array])
+    {
+        $LocalAddress = Join-String -Arr $Address.LocalAddress -Separator ", "
+    }
+    else { $LocalAddress = $Address.LocalAddress }
+
+    if ($Address.RemoteAddress -is [System.Array])
+    {
+        $RemoteAddress = Join-String -Arr $Address.RemoteAddress -Separator ", "
+    }
+    else { $RemoteAddress = $Address.RemoteAddress }
 
     if ($Activity) { Write-Progress -CurrentOperation "Application" @ProgressParams }
     $Application = $NFRule | Get-NetFirewallApplicationFilter
@@ -197,8 +207,17 @@ function Parse-FWRule
     if ($Activity) { Write-Progress -CurrentOperation "Port" @ProgressParams }
     $Port = $NFRule | Get-NetFirewallPortFilter
     $Protocol = $Port.Protocol
-    $RemotePort = $Port.RemotePort
-    $LocalPort = $Port.LocalPort
+    if ($Port.LocalPort -is [System.Array])
+    {
+        $LocalPort = Join-String -Arr $Port.LocalPort -Separator ", "
+    }
+    else { $LocalPort = $Port.LocalPort }
+
+    if ($Port.RemotePort -is [System.Array])
+    {
+        $RemotePort = Join-String -Arr $Port.RemotePort -Separator ", "
+    }
+    else { $RemotePort = $Port.RemotePort }
 
     if ($Activity) { Write-Progress -CurrentOperation "Sum up" @ProgressParams }
     $FWRuleObj = [FWRule]::new()
@@ -233,6 +252,91 @@ function Parse-FWRule
 
     .OUTPUTS
         An object of type FWRule.
+    #>
+}
+
+function Join-String
+{
+    param
+    (
+        [System.Array]
+        $Arr,
+        [string]
+        $Separator
+    )
+
+    $toReturn = ""
+
+    if ($Arr)
+    {
+        for ($i = 0; $i -lt $Arr.Length; $i++) { $toReturn += $Arr[$i] + $Separator }
+
+        if ($toReturn.Contains($Separator)) { $toReturn = $toReturn.Remove($toReturn.LastIndexOf($Separator)) }
+    }
+    return $toReturn
+
+    <#
+    .SYNOPSIS
+        Joins input array of string Arr using Separator.
+
+    .PARAMETER Arr
+        Array of string to Join-String.
+
+    .PARAMETER Separator
+        Separator to use between each string in the array.
+
+    .OUTPUTS
+        A string with all the items in Arr separated by Separator.
+
+    .EXAMPLE
+        Join-String -Arr ("a", "b", "c") -Separator "; "
+        a; b; c
+    #>
+}
+
+function Split-String
+{
+    param
+    (
+        [string]
+        $Str,
+        [string]
+        $Separator
+    )
+
+    $splitted = $Str.Split($Separator)
+    if ($splitted -is [System.Array])
+    {
+        $toReturn = New-Object System.Collections.ArrayList
+        for ($i = 0; $i -lt $splitted.Length; $i++)
+        {
+            $trimmed = $splitted[$i].Trim()
+            if ($trimmed) { $null = $toReturn.Add($trimmed) }
+        }
+        return $toReturn
+    }
+    return $splitted
+
+    <#
+    .SYNOPSIS
+        Splits input string into an array of trimmed strings.
+        Only non-empty strings will be returned.
+
+    .PARAMETER Str
+        A string to split.
+
+    .PARAMETER Separator
+        Separator to use to split the string.
+
+    .OUTPUTS
+        An array of strings.
+
+    .EXAMPLE
+        Split-String -Str "a;   b; c   ;d" -Separator "; "
+        a
+        b
+        c
+        d
     #>
 }
 
@@ -373,7 +477,12 @@ function Update-FWRule
         else
         {
             if (-not $Silent) { Write-Host "Updating LocalAddress of" $ComparingRule.DisplayName "from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $SourceRule.LocalAddress
+
+            $localAddress = ""
+            if ($SourceRule.LocalAddress.Contains(",")) { $localAddress = Split-String -Str $SourceRule.LocalAddress -Separator "," }
+            else { $localAddress = $SourceRule.LocalAddress }
+
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $localAddress
         }
     }
     if ($SourceRule.RemoteAddress -ne $ComparingRule.RemoteAddress)
@@ -382,7 +491,12 @@ function Update-FWRule
         else
         {
             if (-not $Silent) { Write-Host "Updating RemoteAddress of" $ComparingRule.DisplayName "from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $SourceRule.RemoteAddress
+
+            $remoteAddress = ""
+            if ($SourceRule.RemoteAddress.Contains(",")) { $remoteAddress = Split-String -Str $SourceRule.RemoteAddress -Separator "," }
+            else { $remoteAddress = $SourceRule.RemoteAddress }
+
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $remoteAddress
         }
     }
     if ($SourceRule.Protocol -ne $ComparingRule.Protocol)
@@ -400,7 +514,12 @@ function Update-FWRule
         else
         {
             if (-not $Silent) { Write-Host "Updating LocalPort of" $ComparingRule.DisplayName "from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $SourceRule.LocalPort
+
+            $localPort = ""
+            if ($SourceRule.LocalPort.Contains(",")) { $localPort = Split-String -Str $SourceRule.LocalPort -Separator "," }
+            else { $localPort = $SourceRule.LocalPort }
+
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $localPort
         }
     }
     if ($SourceRule.RemotePort -ne $ComparingRule.RemotePort)
@@ -409,7 +528,12 @@ function Update-FWRule
         else
         {
             if (-not $Silent) { Write-Host "Updating RemotePort of" $ComparingRule.DisplayName "from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $SourceRule.RemotePort
+
+            $remotePort = ""
+            if ($SourceRule.RemotePort.Contains(",")) { $remotePort = Split-String -Str $SourceRule.RemotePort -Separator "," }
+            else { $remotePort = $SourceRule.RemotePort }
+
+            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $remotePort
         }
     }
     if ($SourceRule.Description -ne $ComparingRule.Description)

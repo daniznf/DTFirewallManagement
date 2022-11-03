@@ -8,7 +8,7 @@
 RootModule = 'DTFirewallManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.14.4'
+ModuleVersion = '0.15.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -20,7 +20,7 @@ GUID = 'fb673a0c-8b07-4386-be39-cabf0dc6a832'
 Author = 'daniznf'
 
 # Company or vendor of this module
-# CompanyName = 'znflabs'
+# CompanyName = 'ZnfLabs'
 
 # Copyright statement for this module
 Copyright = '(c) 2022 daniznf. All rights reserved.'
