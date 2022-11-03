@@ -327,6 +327,8 @@ function Update-FWRules
         # $i = 0 is DefaultRule
         $CSVRule = $CSVRules[$i]
 
+        if (-not $CSVRule.ID) { continue }
+
         if (-not $Silent) {
             $Activity = "Parsing rule " + $CSVRule.DisplayName
             $PercentComplete = ($i / $CSVRules.Count * 100)
