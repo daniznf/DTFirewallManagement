@@ -316,7 +316,10 @@ function Update-FWRules
                         -Direction $CurrentRule.Direction `
                         -Action $CurrentRule.Action
 
-            if ($CSVRule) { Write-Host "Ignoring" $CurrentRule.DisplayName }
+            if ($CSVRule)
+            {
+                if (-not $Silent) { Write-Host "Ignoring" $CurrentRule.DisplayName }
+            }
             else { Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams }
         }
     }
@@ -335,7 +338,10 @@ function Update-FWRules
         }
 
         # Do not search for ignored IDs.
-        if ($CSVRule.ID -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring" $CSVRule.DisplayName }
+        if ($CSVRule.ID -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring" $CSVRule.DisplayName }
+        }
         else
         {
             if ($FastMode)
@@ -381,7 +387,7 @@ function Update-FWRules
         Do not actually modify firewall, only show what would happen.
 
     .PARAMETER Silent
-        Do not write anything but errors.
+        Do not write anything but errors and new added rules.
 
     .PARAMETER FastMode
         Only enable or disable rules.

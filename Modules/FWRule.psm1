@@ -375,6 +375,8 @@ function  Add-FWRule
     if ($NewRule.LocalPort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalPort", $NewRule.LocalPort) }
     if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
     if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
+
+    # New-NetFirewallRule will write results to host
     New-NetFirewallRule @WhatIfParam @RuleParams
 
 
@@ -386,7 +388,7 @@ function  Add-FWRule
         An object of type FWRule with all informations necessary to add a new rule to firewall.
 
     .PARAMETER Silent
-        Do not write anything but errors.
+        Do not write anything but errors and new added rules.
 
     .PARAMETER WhatIf
         Do not actually modify Firewall.
@@ -419,7 +421,10 @@ function Update-FWRule
 
     if ($SourceRule.DisplayName -ne $ComparingRule.DisplayName)
     {
-        if ($SourceRule.DisplayName -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring DisplayName of" $ComparingRule.DisplayName }
+        if ($SourceRule.DisplayName -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring DisplayName of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating DisplayName of" $ComparingRule.DisplayName "to" $SourceRule.DisplayName }
@@ -428,7 +433,10 @@ function Update-FWRule
     }
     if ($SourceRule.Program -ne $ComparingRule.Program)
     {
-        if ($SourceRule.Program -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Program of" $ComparingRule.DisplayName }
+        if ($SourceRule.Program -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Program of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Program of" $ComparingRule.DisplayName "from" $ComparingRule.Program "to" $SourceRule.Program }
@@ -437,7 +445,10 @@ function Update-FWRule
     }
     if ($SourceRule.Enabled -ne $ComparingRule.Enabled)
     {
-        if ($SourceRule.Enabled -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        if ($SourceRule.Enabled -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $SourceRule.Enabled }
@@ -446,7 +457,10 @@ function Update-FWRule
     }
     if ($SourceRule.Profile -ne $ComparingRule.Profile)
     {
-        if ($SourceRule.Profile -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Profile of" $ComparingRule.DisplayName }
+        if ($SourceRule.Profile -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Profile of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Profile of" $ComparingRule.DisplayName "from" $ComparingRule.Profile "to"  $SourceRule.Profile }
@@ -455,7 +469,10 @@ function Update-FWRule
     }
     if ($SourceRule.Direction -ne $ComparingRule.Direction)
     {
-        if ($SourceRule.Direction -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Direction of" $ComparingRule.DisplayName }
+        if ($SourceRule.Direction -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Direction of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Direction of" $ComparingRule.DisplayName "from" $ComparingRule.Direction "to"  $SourceRule.Direction }
@@ -464,7 +481,10 @@ function Update-FWRule
     }
     if ($SourceRule.Action -ne $ComparingRule.Action)
     {
-        if ($SourceRule.Action -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Action of" $ComparingRule.DisplayName }
+        if ($SourceRule.Action -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Action of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Action of" $ComparingRule.DisplayName "from" $ComparingRule.Action "to"  $SourceRule.Action }
@@ -473,7 +493,10 @@ function Update-FWRule
     }
     if ($SourceRule.LocalAddress -ne $ComparingRule.LocalAddress)
     {
-        if ($SourceRule.LocalAddress -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring LocalAddress of" $ComparingRule.DisplayName }
+        if ($SourceRule.LocalAddress -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring LocalAddress of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating LocalAddress of" $ComparingRule.DisplayName "from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
@@ -487,7 +510,10 @@ function Update-FWRule
     }
     if ($SourceRule.RemoteAddress -ne $ComparingRule.RemoteAddress)
     {
-        if ($SourceRule.RemoteAddress -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring RemoteAddress of" $ComparingRule.DisplayName }
+        if ($SourceRule.RemoteAddress -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring RemoteAddress of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating RemoteAddress of" $ComparingRule.DisplayName "from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
@@ -501,7 +527,10 @@ function Update-FWRule
     }
     if ($SourceRule.Protocol -ne $ComparingRule.Protocol)
     {
-        if ($SourceRule.Protocol -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Protocol of" $ComparingRule.DisplayName }
+        if ($SourceRule.Protocol -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Protocol of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Protocol of" $ComparingRule.DisplayName "from" $ComparingRule.Protocol "to"  $SourceRule.Protocol }
@@ -510,7 +539,10 @@ function Update-FWRule
     }
     if ($SourceRule.LocalPort -ne $ComparingRule.LocalPort)
     {
-        if ($SourceRule.LocalPort -eq [FWRule]::IgnoreTag){ Write-Host "Ignoring LocalPort of" $ComparingRule.DisplayName }
+        if ($SourceRule.LocalPort -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring LocalPort of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating LocalPort of" $ComparingRule.DisplayName "from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
@@ -524,7 +556,10 @@ function Update-FWRule
     }
     if ($SourceRule.RemotePort -ne $ComparingRule.RemotePort)
     {
-        if ($SourceRule.RemotePort -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring RemotePort of" $ComparingRule.DisplayName }
+        if ($SourceRule.RemotePort -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent)  { Write-Host "Ignoring RemotePort of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating RemotePort of" $ComparingRule.DisplayName "from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
@@ -538,7 +573,10 @@ function Update-FWRule
     }
     if ($SourceRule.Description -ne $ComparingRule.Description)
     {
-        if ($SourceRule.Description -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Description of" $ComparingRule.DisplayName }
+        if ($SourceRule.Description -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Description of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Description of" $ComparingRule.DisplayName "to" $SourceRule.Description }
@@ -588,7 +626,10 @@ function Update-EnabledValue
 
     if ($Enabled -ne $ComparingRule.Enabled)
     {
-        if ($Enabled -eq [FWRule]::IgnoreTag) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        if ($Enabled -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
+        }
         else
         {
             if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $Enabled }
