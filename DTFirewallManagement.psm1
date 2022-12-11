@@ -20,6 +20,8 @@
 
 #Requires -RunAsAdministrator
 
+$MinVersion = [System.Version]::new("0.16.0")
+
 function Export-FWRules {
     param (
         [string]
@@ -40,6 +42,9 @@ function Export-FWRules {
         [string]
         $Direction
     )
+
+    # If module is not found, an exception will be thrown but function will continue.
+    $ModuleVersion = (Test-ModuleManifest ".\DTFirewallManagement.psd1").Version
 
     $GFR = @{}
     if ($DisplayName) { $GFR.Add("DisplayName", $DisplayName) }
@@ -65,7 +70,7 @@ function Export-FWRules {
     {
         # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported.
         $DefaultRule = [FWRule]::new()
-        $DefaultRule.ID = "DefaultRule"
+        $DefaultRule.ID = "DTFMDefaultRule"
         $DefaultRule.DisplayName = $DisplayName
         $DefaultRule.Description = "Parameters used when calling exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
         $DefaultRule.Program = "DTFirewallManagement"
@@ -73,7 +78,7 @@ function Export-FWRules {
         $DefaultRule.Direction = $Direction
         $DefaultRule.Action = $Action
         $DefaultRule.Profile = ""
-        $DefaultRule.LocalAddress =  ""
+        $DefaultRule.LocalAddress =  $ModuleVersion
         $DefaultRule.RemoteAddress =  ""
         $DefaultRule.Protocol =  ""
         $DefaultRule.LocalPort =  ""
@@ -249,14 +254,29 @@ function Update-FWRules
 
     # Use default rule written in csv to know which filters were used during export, then update rules with the same filters.
     $DefaultRule = $CSVRules[0]
-    if ($DefaultRule.ID -eq "DefaultRule")
+    if ($DefaultRule.ID -eq "DTFMDefaultRule")
     {
+        $CSVVersion = $null
+        if ([System.Version]::TryParse($DefaultRule.LocalAddress, [ref] $CSVVersion))
+        {
+            if ($CSVVersion -lt $MinVersion)
+            {
+                throw "CSV File version is $CSVVersion, but at least $MinVersion is required.
+                        Please run Export-FWRules to have a compatible CSV file."
+            }
+        }
+        else
+        {
+            throw [System.Data.VersionNotFoundException]::new("Cannot read version from $PathCSV.
+                    Please run Export-FWRules to have a compatible CSV file.")
+        }
+
         $DisplayName = $DefaultRule.DisplayName
         $Action = $DefaultRule.Action
         $Enabled = $DefaultRule.Enabled
         $Direction = $DefaultRule.Direction
     }
-    else { throw "Cannot find default rule in csv, please run Export-FWRules.ps1" }
+    else { throw "Cannot find default rule in CSV file, please run Export-FWRules" }
 
     $GNFR = @{}
     if ($Action) { $GNFR.Add("Action", $Action) }
