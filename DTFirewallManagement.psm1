@@ -20,7 +20,7 @@
 
 #Requires -RunAsAdministrator
 
-$MinVersion = [System.Version]::new("0.16.0")
+$MinVersion = [System.Version]::new("0.19.0")
 
 function Export-FWRules {
     param (
@@ -78,10 +78,10 @@ function Export-FWRules {
         $DefaultRule.Direction = $Direction
         $DefaultRule.Action = $Action
         $DefaultRule.Profile = ""
-        $DefaultRule.LocalAddress =  $ModuleVersion
-        $DefaultRule.RemoteAddress =  ""
         $DefaultRule.Protocol =  ""
+        $DefaultRule.LocalAddress =  $ModuleVersion
         $DefaultRule.LocalPort =  ""
+        $DefaultRule.RemoteAddress =  ""
         $DefaultRule.RemotePort =  ""
 
         $RuleList.Add($DefaultRule) > $null

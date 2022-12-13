@@ -29,10 +29,10 @@ class FWRule
     [string]$Profile
     [string]$Direction
     [string]$Action
-    [string]$LocalAddress
-    [string]$RemoteAddress
     [string]$Protocol
+    [string]$LocalAddress
     [string]$LocalPort
+    [string]$RemoteAddress
     [string]$RemotePort
     [string]$Description
 
@@ -229,10 +229,10 @@ function Parse-FWRule
     $FWRuleObj.Profile = $RProfile
     $FWRuleObj.Direction = $Direction
     $FWRuleObj.Action = $Action
-    $FWRuleObj.LocalAddress = $LocalAddress
-    $FWRuleObj.RemoteAddress = $RemoteAddress
     $FWRuleObj.Protocol = $Protocol
+    $FWRuleObj.LocalAddress = $LocalAddress
     $FWRuleObj.LocalPort = $LocalPort
+    $FWRuleObj.RemoteAddress = $RemoteAddress
     $FWRuleObj.RemotePort = $RemotePort
     $FWRuleObj.Description = $Description
 
@@ -285,10 +285,10 @@ function  Add-FWRule
     if ($NewRule.Profile -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Profile", $NewRule.Profile) }
     if ($NewRule.Direction -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Direction", $NewRule.Direction) }
     if ($NewRule.Action -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Action", $NewRule.Action) }
-    if ($NewRule.LocalAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalAddress", $NewRule.LocalAddress) }
-    if ($NewRule.RemoteAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemoteAddress", $NewRule.RemoteAddress) }
     if ($NewRule.Protocol -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Protocol", $NewRule.Protocol) }
+    if ($NewRule.LocalAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalAddress", $NewRule.LocalAddress) }
     if ($NewRule.LocalPort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalPort", $NewRule.LocalPort) }
+    if ($NewRule.RemoteAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemoteAddress", $NewRule.RemoteAddress) }
     if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
     if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
 
@@ -332,173 +332,24 @@ function Update-FWRule
 
     if ($SourceRule.ID -ne $ComparingRule.ID) { throw "SourceRule's ID and ComparingRule's ID must match."}
 
-    $WhatIfParam = @{}
-    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
+    $UAParams = @{}
+    if ($Silent) { $UAParams.Add("Silent", $true) }
+    if ($WhatIf) { $UAParams.Add("WhatIf", $true) }
+    $UAParams.Add("SourceRule", $SourceRule)
+    $UAParams.Add("ComparingRule", $ComparingRule)
 
-    if ($SourceRule.DisplayName -ne $ComparingRule.DisplayName)
-    {
-        if ($SourceRule.DisplayName -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring DisplayName of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating DisplayName of" $ComparingRule.DisplayName "to" $SourceRule.DisplayName }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -NewDisplayName $SourceRule.DisplayName
-        }
-    }
-    if ($SourceRule.Program -ne $ComparingRule.Program)
-    {
-        if ($SourceRule.Program -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Program of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Program of" $ComparingRule.DisplayName "from" $ComparingRule.Program "to" $SourceRule.Program }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Program $SourceRule.Program
-        }
-    }
-    if ($SourceRule.Enabled -ne $ComparingRule.Enabled)
-    {
-        if ($SourceRule.Enabled -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $SourceRule.Enabled }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $SourceRule.Enabled
-        }
-    }
-    if ($SourceRule.Profile -ne $ComparingRule.Profile)
-    {
-        if ($SourceRule.Profile -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Profile of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Profile of" $ComparingRule.DisplayName "from" $ComparingRule.Profile "to"  $SourceRule.Profile }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Profile $SourceRule.Profile
-        }
-    }
-    if ($SourceRule.Direction -ne $ComparingRule.Direction)
-    {
-        if ($SourceRule.Direction -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Direction of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Direction of" $ComparingRule.DisplayName "from" $ComparingRule.Direction "to"  $SourceRule.Direction }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Direction $SourceRule.Direction
-        }
-    }
-    if ($SourceRule.Action -ne $ComparingRule.Action)
-    {
-        if ($SourceRule.Action -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Action of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Action of" $ComparingRule.DisplayName "from" $ComparingRule.Action "to"  $SourceRule.Action }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Action $SourceRule.Action
-        }
-    }
-    if ($SourceRule.LocalAddress -ne $ComparingRule.LocalAddress)
-    {
-        if ($SourceRule.LocalAddress -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring LocalAddress of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating LocalAddress of" $ComparingRule.DisplayName "from" $ComparingRule.LocalAddress "to"  $SourceRule.LocalAddress }
-
-            $localAddress = ""
-            if ($SourceRule.LocalAddress.Contains(",")) { $localAddress = Split-String -Str $SourceRule.LocalAddress -Separator "," }
-            else { $localAddress = $SourceRule.LocalAddress }
-
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalAddress $localAddress
-        }
-    }
-    if ($SourceRule.RemoteAddress -ne $ComparingRule.RemoteAddress)
-    {
-        if ($SourceRule.RemoteAddress -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring RemoteAddress of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating RemoteAddress of" $ComparingRule.DisplayName "from" $ComparingRule.RemoteAddress "to"  $SourceRule.RemoteAddress }
-
-            $remoteAddress = ""
-            if ($SourceRule.RemoteAddress.Contains(",")) { $remoteAddress = Split-String -Str $SourceRule.RemoteAddress -Separator "," }
-            else { $remoteAddress = $SourceRule.RemoteAddress }
-
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemoteAddress $remoteAddress
-        }
-    }
-    if ($SourceRule.Protocol -ne $ComparingRule.Protocol)
-    {
-        if ($SourceRule.Protocol -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Protocol of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Protocol of" $ComparingRule.DisplayName "from" $ComparingRule.Protocol "to"  $SourceRule.Protocol }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Protocol $SourceRule.Protocol
-        }
-    }
-    if ($SourceRule.LocalPort -ne $ComparingRule.LocalPort)
-    {
-        if ($SourceRule.LocalPort -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring LocalPort of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating LocalPort of" $ComparingRule.DisplayName "from" $ComparingRule.LocalPort "to"  $SourceRule.LocalPort }
-
-            $localPort = ""
-            if ($SourceRule.LocalPort.Contains(",")) { $localPort = Split-String -Str $SourceRule.LocalPort -Separator "," }
-            else { $localPort = $SourceRule.LocalPort }
-
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -LocalPort $localPort
-        }
-    }
-    if ($SourceRule.RemotePort -ne $ComparingRule.RemotePort)
-    {
-        if ($SourceRule.RemotePort -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent)  { Write-Host "Ignoring RemotePort of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating RemotePort of" $ComparingRule.DisplayName "from" $ComparingRule.RemotePort "to"  $SourceRule.RemotePort }
-
-            $remotePort = ""
-            if ($SourceRule.RemotePort.Contains(",")) { $remotePort = Split-String -Str $SourceRule.RemotePort -Separator "," }
-            else { $remotePort = $SourceRule.RemotePort }
-
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -RemotePort $remotePort
-        }
-    }
-    if ($SourceRule.Description -ne $ComparingRule.Description)
-    {
-        if ($SourceRule.Description -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Description of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Description of" $ComparingRule.DisplayName "to" $SourceRule.Description }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Description $SourceRule.Description
-        }
-    }
+    Update-Attribute @UAParams -AttributeName "DisplayName"
+    Update-Attribute @UAParams -AttributeName "Program"
+    Update-Attribute @UAParams -AttributeName "Enabled"
+    Update-Attribute @UAParams -AttributeName "Profile"
+    Update-Attribute @UAParams -AttributeName "Direction"
+    Update-Attribute @UAParams -AttributeName "Action"
+    Update-Attribute @UAParams -AttributeName "Protocol"
+    Update-Attribute @UAParams -AttributeName "LocalAddress"
+    Update-Attribute @UAParams -AttributeName "LocalPort"
+    Update-Attribute @UAParams -AttributeName "RemoteAddress"
+    Update-Attribute @UAParams -AttributeName "RemotePort"
+    Update-Attribute @UAParams -AttributeName "Description"
 
     <#
     .SYNOPSIS
@@ -509,6 +360,96 @@ function Update-FWRule
 
     .PARAMETER ComparingRule
         FWRule object to compare values against.
+
+    .PARAMETER Silent
+        Do not write anything but errors.
+
+    .PARAMETER WhatIf
+        Do not actually modify Firewall.
+    #>
+        }
+
+function Update-Attribute
+        {
+    param
+    (
+        [Parameter(Mandatory)]
+        [string]
+        $AttributeName,
+        [Parameter(Mandatory)]
+        [FWRule]
+        $SourceRule,
+        [Parameter(Mandatory)]
+        [FWRule]
+        $ComparingRule,
+        [switch]
+        $Silent,
+        [switch]
+        $WhatIf
+    )
+
+    $SourceAttribute = $SourceRule | Select-Object -ExpandProperty $AttributeName
+    $ComparingAttribute = $ComparingRule | Select-Object -ExpandProperty $AttributeName
+
+    if ($SourceAttribute -ne $ComparingAttribute)
+    {
+        if ($SourceAttribute -eq [FWRule]::IgnoreTag)
+        {
+            if (-not $Silent)
+        {
+                Write-Host "Ignoring $AttributeName of" $ComparingRule.DisplayName
+        }
+    }
+        else
+        {
+            if (-not $Silent)
+    {
+                if (($AttributeName -eq "DisplayName") -or ($AttributeName -eq "Description"))
+        {
+                    Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
+                               "to '$SourceAttribute'"
+        }
+        else
+        {
+                    Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
+                               "from '$ComparingAttribute' to '$SourceAttribute'"
+        }
+    }
+
+            # Addresses and ports might need an array instead of string.
+            if (($AttributeName -eq "LocalAddress") -or ($AttributeName -eq "RemoteAddress") -or
+                ($AttributeName -eq "LocalPort") -or ($AttributeName -eq "RemotePort"))
+    {
+                if ($SourceAttribute.Contains(",")) { $SourceAttribute = Split-String -Str $SourceAttribute -Separator "," }
+        }
+
+            $SNFRParams = @{}
+            $SNFRParams.Add("ID", $ComparingRule.ID)
+
+            # Updating DisplayName is done with -NewDisplayName instead of -DisplayName.
+            if ($AttributeName -eq "DisplayName") { $SNFRParams.Add("NewDisplayName", $SourceAttribute) }
+            else { $SNFRParams.Add($AttributeName, $SourceAttribute) }
+
+            if ($WhatIf) { $SNFRParams.Add("WhatIf", $true) }
+
+            Set-NetFirewallRule @SNFRParams
+        }
+    }
+
+
+    <#
+    .SYNOPSIS
+        Updates the value of an attribute of the NetFirewallRule (searched by ID) with the value of the attribute of SourceRule,
+        if it is not equal to attribute in ComparingRule.
+
+    .PARAMETER AttributeName
+        Name of attribute to compare and update.
+
+    .PARAMETER SourceRule
+        FWRule object to compare (and copy) attribute's value from.
+
+    .PARAMETER ComparingRule
+        FWRule object to compare attribute's value against.
 
     .PARAMETER Silent
         Do not write anything but errors.
