@@ -8,7 +8,7 @@
 RootModule = 'DTFirewallManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.17.0'
+ModuleVersion = '0.18.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -80,16 +80,15 @@ AliasesToExport = @()
 # DscResourcesToExport = @()
 
 # List of all modules packaged with this module
-ModuleList = @('.\Modules\FWRule.psm1')
+ModuleList = @('.\Modules\FWRule.psm1', '.\Modules\StringHelper.psm1')
 
 # List of all files packaged with this module
-FileList = @('DTFirewallManagement.psm1', 'DTFirewallManagement.psd1', 'LICENSE', 'README.md','.\Modules\FWRule.psm1')
+FileList = @('DTFirewallManagement.psm1', 'DTFirewallManagement.psd1', 'LICENSE', 'README.md', '.\Modules\FWRule.psm1', '.\Modules\StringHelper.psm1')
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
 
     PSData = @{
-
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @("Firewall", "Rules", "Export", "Update", "CSV")
 
