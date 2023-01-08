@@ -44,7 +44,7 @@ function Export-FWRules {
     )
 
     # If module is not found, an exception will be thrown but function will continue.
-    $ModuleVersion = (Test-ModuleManifest ".\DTFirewallManagement.psd1").Version
+    $ModuleVersion = (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
 
     $GFR = @{}
     if ($DisplayName) { $GFR.Add("DisplayName", $DisplayName) }
