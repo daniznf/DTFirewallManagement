@@ -367,10 +367,10 @@ function Update-FWRule
     .PARAMETER WhatIf
         Do not actually modify Firewall.
     #>
-        }
+}
 
 function Update-Attribute
-        {
+{
     param
     (
         [Parameter(Mandatory)]
@@ -396,32 +396,32 @@ function Update-Attribute
         if ($SourceAttribute -eq [FWRule]::IgnoreTag)
         {
             if (-not $Silent)
-        {
+            {
                 Write-Host "Ignoring $AttributeName of" $ComparingRule.DisplayName
+            }
         }
-    }
         else
         {
             if (-not $Silent)
-    {
+            {
                 if (($AttributeName -eq "DisplayName") -or ($AttributeName -eq "Description"))
-        {
+                {
                     Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
                                "to '$SourceAttribute'"
-        }
-        else
-        {
+                }
+                else
+                {
                     Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
                                "from '$ComparingAttribute' to '$SourceAttribute'"
-        }
-    }
+                }
+            }
 
             # Addresses and ports might need an array instead of string.
             if (($AttributeName -eq "LocalAddress") -or ($AttributeName -eq "RemoteAddress") -or
                 ($AttributeName -eq "LocalPort") -or ($AttributeName -eq "RemotePort"))
-    {
+            {
                 if ($SourceAttribute.Contains(",")) { $SourceAttribute = Split-String -Str $SourceAttribute -Separator "," }
-        }
+            }
 
             $SNFRParams = @{}
             $SNFRParams.Add("ID", $ComparingRule.ID)
