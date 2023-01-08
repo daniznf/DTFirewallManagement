@@ -8,7 +8,7 @@
 RootModule = 'DTFirewallManagement.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.19.2'
+ModuleVersion = '0.19.3'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -23,7 +23,7 @@ Author = 'daniznf'
 # CompanyName = 'ZnfLabs'
 
 # Copyright statement for this module
-Copyright = '(c) 2022 daniznf. All rights reserved.'
+Copyright = '2022-2023 daniznf. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Exports firewall rules to CSV, or prints them in shell. Updates firewall rules with ones in CSV file.'

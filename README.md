@@ -1,7 +1,7 @@
 # Daniele's Tools Firewall Management
 DTFirewallManagement <br/>
 Exports to CSV and updates from CSV firewall rules. <br/>
-Copyright (C) 2022 Daniznf
+Copyright (C) 2022-2023 Daniznf
 
 ### Description
 This module exposes 2 commands:
