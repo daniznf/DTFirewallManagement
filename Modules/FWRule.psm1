@@ -24,6 +24,8 @@ class FWRule
 {
     [string]$ID
     [string]$DisplayName
+    # DisplayGroup is not editable, but is reported in system's graphical instrumentation.
+    [string]$Group
     [string]$Program
     [string]$Enabled
     [string]$Profile
@@ -56,18 +58,29 @@ function Get-FWRules
         $Direction,
 
         [string]
-        $DisplayName
+        $DisplayName,
+
+        [string]
+        $Group,
+
+        [string]
+        $DisplayGroup
     )
 
-    $GNFR = @{}
+    $GNFRParams = @{}
 
-    if ($Action) { $GNFR.Add("Action", $Action) }
-    if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFR.Add("Direction", $Direction) }
+    if ($Action) { $GNFRParams.Add("Action", $Action) }
+    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
 
-    $NFRules = Get-NetFirewallRule @GNFR
+    $NFRules = Get-NetFirewallRule @GNFRParams
 
+    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
+    # - Combining DisplayName with other filters
+    # - Filtering using -match
     if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
+    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
+    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
 
     # If only one rule is found, $NFRules is not an array.
     if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
@@ -103,6 +116,12 @@ function Get-FWRules
 
     .PARAMETER DisplayName
         Return all rules with matching DisplayName value.
+
+    .PARAMETER Group
+        Return all rules with matching Group value.
+
+    .PARAMETER DisplayGroup
+        Return all rules with matching DisplayGroup value.
 
     .OUTPUTS
         A list of objects of type FWRule.
@@ -178,6 +197,7 @@ function Parse-FWRule
     $ID = $NFRule.InstanceID
     # $Name = $NFRule.Name
     $DisplayName = $NFRule.DisplayName
+    $Group = $NFRule.Group
 
     if ($Activity) { Write-Progress -CurrentOperation "Basic infos" @ProgressParams }
     $Description = $NFRule.Description
@@ -224,6 +244,7 @@ function Parse-FWRule
     $FWRuleObj = [FWRule]::new()
     $FWRuleObj.ID = $ID
     $FWRuleObj.DisplayName = $DisplayName
+    $FWRuleObj.Group = $Group
     $FWRuleObj.Program = $Program
     $FWRuleObj.Enabled = $Enabled
     $FWRuleObj.Profile = $RProfile
@@ -271,8 +292,8 @@ function  Add-FWRule
         $WhatIf
     )
 
-    $WhatIfParam = @{}
-    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
+    $NNFRParams = @{}
+    if ($WhatIf) { $NNFRParams.Add("WhatIf", $WhatIf) }
 
     if (-not $Silent) { Write-Host "Adding rule" $NewRule.DisplayName }
 
@@ -280,6 +301,7 @@ function  Add-FWRule
     # If ID is missing, it will be automatically generated.
     if ($NewRule.ID -ne [FWRule]::IgnoreTag) { $RuleParams.Add("ID", $NewRule.ID) }
     if ($NewRule.DisplayName -ne [FWRule]::IgnoreTag) { $RuleParams.Add("DisplayName", $NewRule.DisplayName) }
+    # Group must be handled by Update-Attribute
     if ($NewRule.Program -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Program", $NewRule.Program) }
     if ($NewRule.Enabled -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Enabled", $NewRule.Enabled) }
     if ($NewRule.Profile -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Profile", $NewRule.Profile) }
@@ -292,9 +314,14 @@ function  Add-FWRule
     if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
     if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
 
-    # New-NetFirewallRule will write results to host
-    New-NetFirewallRule @WhatIfParam @RuleParams
+    $AddedRule = New-NetFirewallRule @NNFRParams @RuleParams
 
+    # Dot notation and Set-NetFirewallRule is required for Group.
+    if (($AddedRule) -and ($NewRule.Group -ne ""))
+    {
+        if ($Silent) { NNFRParams.add("Silent", $Silent) }
+        Update-Attribute -AttributeName "Group" -SourceAttribute $NewRule.Group -ComparingCimRule $AddedRule @NNFRParams
+    }
 
     <#
     .SYNOPSIS
@@ -335,21 +362,21 @@ function Update-FWRule
     $UAParams = @{}
     if ($Silent) { $UAParams.Add("Silent", $true) }
     if ($WhatIf) { $UAParams.Add("WhatIf", $true) }
-    $UAParams.Add("SourceRule", $SourceRule)
-    $UAParams.Add("ComparingRule", $ComparingRule)
+    $UAParams.Add("ComparingFWRule", $ComparingRule)
 
-    Update-Attribute @UAParams -AttributeName "DisplayName"
-    Update-Attribute @UAParams -AttributeName "Program"
-    Update-Attribute @UAParams -AttributeName "Enabled"
-    Update-Attribute @UAParams -AttributeName "Profile"
-    Update-Attribute @UAParams -AttributeName "Direction"
-    Update-Attribute @UAParams -AttributeName "Action"
-    Update-Attribute @UAParams -AttributeName "Protocol"
-    Update-Attribute @UAParams -AttributeName "LocalAddress"
-    Update-Attribute @UAParams -AttributeName "LocalPort"
-    Update-Attribute @UAParams -AttributeName "RemoteAddress"
-    Update-Attribute @UAParams -AttributeName "RemotePort"
-    Update-Attribute @UAParams -AttributeName "Description"
+    Update-Attribute @UAParams -AttributeName "DisplayName" -SourceAttribute $SourceRule.DisplayName
+    Update-Attribute @UAParams -AttributeName "Group" -SourceAttribute $SourceRule.Group
+    Update-Attribute @UAParams -AttributeName "Program" -SourceAttribute $SourceRule.Program
+    Update-Attribute @UAParams -AttributeName "Enabled" -SourceAttribute $SourceRule.Enabled
+    Update-Attribute @UAParams -AttributeName "Profile" -SourceAttribute $SourceRule.Profile
+    Update-Attribute @UAParams -AttributeName "Direction" -SourceAttribute $SourceRule.Direction
+    Update-Attribute @UAParams -AttributeName "Action" -SourceAttribute $SourceRule.Action
+    Update-Attribute @UAParams -AttributeName "Protocol" -SourceAttribute $SourceRule.Protocol
+    Update-Attribute @UAParams -AttributeName "LocalAddress" -SourceAttribute $SourceRule.LocalAddress
+    Update-Attribute @UAParams -AttributeName "LocalPort" -SourceAttribute $SourceRule.LocalPort
+    Update-Attribute @UAParams -AttributeName "RemoteAddress" -SourceAttribute $SourceRule.RemoteAddress
+    Update-Attribute @UAParams -AttributeName "RemotePort" -SourceAttribute $SourceRule.RemotePort
+    Update-Attribute @UAParams -AttributeName "Description" -SourceAttribute $SourceRule.Description
 
     <#
     .SYNOPSIS
@@ -373,47 +400,74 @@ function Update-Attribute
 {
     param
     (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory,ParameterSetName="FWRule")]
+        [Parameter(Mandatory,ParameterSetName="CimRule")]
         [string]
         $AttributeName,
-        [Parameter(Mandatory)]
+        [Parameter(ParameterSetName="FWRule")]
+        [Parameter(ParameterSetName="CimRule")]
+        [string]
+        $SourceAttribute,
+        [Parameter(Mandatory,ParameterSetName="FWRule")]
         [FWRule]
-        $SourceRule,
-        [Parameter(Mandatory)]
-        [FWRule]
-        $ComparingRule,
+        $ComparingFWRule,
+        [Parameter(Mandatory,ParameterSetName="CimRule")]
+        [CimInstance]
+        $ComparingCimRule,
         [switch]
         $Silent,
         [switch]
         $WhatIf
     )
 
-    $SourceAttribute = $SourceRule | Select-Object -ExpandProperty $AttributeName
-    $ComparingAttribute = $ComparingRule | Select-Object -ExpandProperty $AttributeName
+    if (($null -eq $SourceAttribute) -or ("" -eq $SourceAttribute)) { return }
 
-    if ($SourceAttribute -ne $ComparingAttribute)
+    if ($PSCmdlet.ParameterSetName -eq "FWRule")
     {
-        if ($SourceAttribute -eq [FWRule]::IgnoreTag)
+        $ComparingRule = $ComparingFWRule
+    }
+    else
+    {
+        $ComparingRule = $ComparingCimRule
+    }
+
+    if ($SourceAttribute -eq [FWRule]::IgnoreTag)
+    {
+        if (-not $Silent) { Write-Host "Ignoring $AttributeName of" $ComparingRule.DisplayName }
+    }
+    else
+    {
+        if (($ComparingRule -is [CimInstance]) -and ($AttributeName -notin "ID", "Name",
+        "DisplayName", "Description", "DisplayGroup", "Group", "Enabled",
+        "Profile", "Platform", "Direction", "Action", "EdgeTraversalPolicy",
+        "LooseSourceMapping", "LocalOnlyMapping", "Owner",
+        "PrimaryStatus", "Status", "EnforcementStatus",
+        "PolicyStoreSource", "PolicyStoreSourceType", "RemoteDynamicKeywordAddresses"))
         {
-            if (-not $Silent)
-            {
-                Write-Host "Ignoring $AttributeName of" $ComparingRule.DisplayName
-            }
+            $ComparingRule = Parse-FWRule -NFRule $ComparingCimRule
         }
-        else
+
+        $ComparingAttribute = $ComparingRule | Select-Object -ExpandProperty $AttributeName
+
+        if ($SourceAttribute -ne $ComparingAttribute)
         {
+            $SNFRParams = @{}
+            if ($WhatIf) { $SNFRParams.Add("WhatIf", $true) }
+
             if (-not $Silent)
             {
-                if (($AttributeName -eq "DisplayName") -or ($AttributeName -eq "Description"))
+                Write-Host "Updating $AttributeName of " -NoNewline
+                if (($AttributeName -eq "DisplayName"))
                 {
-                    Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
-                               "to '$SourceAttribute'"
+                    Write-Host $ComparingRule.ID
                 }
                 else
                 {
-                    Write-Host "Updating $AttributeName of" $ComparingRule.DisplayName `
-                               "from '$ComparingAttribute' to '$SourceAttribute'"
+                    Write-Host $ComparingRule.DisplayName
                 }
+
+                Write-Host "from :" $ComparingAttribute
+                Write-Host "to   :" $SourceAttribute
             }
 
             # Addresses and ports might need an array instead of string.
@@ -423,33 +477,47 @@ function Update-Attribute
                 if ($SourceAttribute.Contains(",")) { $SourceAttribute = Split-String -Str $SourceAttribute -Separator "," }
             }
 
-            $SNFRParams = @{}
-            $SNFRParams.Add("ID", $ComparingRule.ID)
+            # Group parameter is the source string for the DisplayGroup parameter.
+            if ($AttributeName -eq "Group")
+            {
+                # Set-NetFirewallRule will not accept an FWRule
+                if ($ComparingRule -is [FWRule])
+                {
+                    $ComparingRule = Get-NetFirewallRule -ID $ComparingRule.ID
+                }
+                # Dot notation and Set-NetFirewallRule is required for Group.
+                $ComparingRule.Group = $SourceAttribute
+                $ComparingRule | Set-NetFirewallRule @SNFRParams
+            }
+            else
+            {
+                $SNFRParams.Add("ID", $ComparingRule.ID)
 
-            # Updating DisplayName is done with -NewDisplayName instead of -DisplayName.
-            if ($AttributeName -eq "DisplayName") { $SNFRParams.Add("NewDisplayName", $SourceAttribute) }
-            else { $SNFRParams.Add($AttributeName, $SourceAttribute) }
+                # Updating DisplayName is done with -NewDisplayName instead of -DisplayName.
+                if ($AttributeName -eq "DisplayName") { $SNFRParams.Add("NewDisplayName", $SourceAttribute) }
+                else { $SNFRParams.Add($AttributeName, $SourceAttribute) }
 
-            if ($WhatIf) { $SNFRParams.Add("WhatIf", $true) }
-
-            Set-NetFirewallRule @SNFRParams
+                Set-NetFirewallRule @SNFRParams
+            }
         }
     }
 
 
     <#
     .SYNOPSIS
-        Updates the value of an attribute of the NetFirewallRule (searched by ID) with the value of the attribute of SourceRule,
-        if it is not equal to attribute in ComparingRule.
+        Updates the NetFirewallRule (searched by ID) with value of SourceAttribute, if it is not equal to ComparingRule.
 
     .PARAMETER AttributeName
         Name of attribute to compare and update.
 
-    .PARAMETER SourceRule
-        FWRule object to compare (and copy) attribute's value from.
+    .PARAMETER SourceAttribute
+        Value to compare (and copy) to ComparingRule's attribute.
 
-    .PARAMETER ComparingRule
-        FWRule object to compare attribute's value against.
+    .PARAMETER ComparingFWRule
+        FWRule object to compare SourceAttribute against.
+
+    .PARAMETER ComparingCimRule
+        CimInstance object to compare SourceAttribute against.
 
     .PARAMETER Silent
         Do not write anything but errors.
@@ -459,57 +527,7 @@ function Update-Attribute
     #>
 }
 
-function Update-EnabledValue
-{
-    param
-    (
-        [Parameter(Mandatory)]
-        [string]
-        $Enabled,
-
-        [Parameter(Mandatory)]
-        [CimInstance]
-        $ComparingRule,
-
-        [switch]
-        $Silent,
-
-        [switch]
-        $WhatIf
-    )
-
-    $WhatIfParam = @{}
-    if ($WhatIf) { $WhatIfParam.Add("WhatIf", $WhatIf) }
-
-    if ($Enabled -ne $ComparingRule.Enabled)
-    {
-        if ($Enabled -eq [FWRule]::IgnoreTag)
-        {
-            if (-not $Silent) { Write-Host "Ignoring Enabled of" $ComparingRule.DisplayName }
-        }
-        else
-        {
-            if (-not $Silent) { Write-Host "Updating Enabled of" $ComparingRule.DisplayName "from" $ComparingRule.Enabled "to" $Enabled }
-            Set-NetFirewallRule @WhatIfParam -ID $ComparingRule.ID -Enabled $Enabled
-        }
-    }
-
-    <#
-    .SYNOPSIS
-        Updates only the Enabled parameter of NetFirewallRule with same ID as ComparingRule
-        if passed Enabled argument does not match ComparingRule.Enabled.
-
-    .PARAMETER ComparingRule
-        CimInstance object to check values against.
-
-    .PARAMETER Silent
-        Do not write anything but errors.
-
-    .PARAMETER WhatIf
-        Do not actually modify firewall.
-    #>
-}
 
 # `
 
-Export-ModuleMember -Function Get-FWRules, Get-FWRule, Update-FWRule, Update-EnabledValue, Add-FWRule
+Export-ModuleMember -Function Get-FWRules, Get-FWRule, Update-FWRule, Update-Attribute, Add-FWRule

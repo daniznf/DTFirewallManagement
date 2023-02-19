@@ -20,7 +20,7 @@
 
 #Requires -RunAsAdministrator
 
-$MinVersion = [System.Version]::new("0.19.0")
+$MinVersion = [System.Version]::new("0.20.0")
 
 function Export-FWRules {
     param (
@@ -29,6 +29,12 @@ function Export-FWRules {
 
         [string]
         $DisplayName,
+
+        [string]
+        $Group,
+
+        [string]
+        $DisplayGroup,
 
         [ValidateSet("Allow", "Block")]
         [string]
@@ -46,11 +52,13 @@ function Export-FWRules {
     # If module is not found, an exception will be thrown but function will continue.
     $ModuleVersion = (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
 
-    $GFR = @{}
-    if ($DisplayName) { $GFR.Add("DisplayName", $DisplayName) }
-    if ($Action) { $GFR.Add("Action", $Action) }
-    if ($Enabled) { $GFR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GFR.Add("Direction", $Direction) }
+    $GFRParams = @{}
+    if ($DisplayName) { $GFRParams.Add("DisplayName", $DisplayName) }
+    if ($Group) { $GFRParams.Add("Group", $Group) }
+    if ($DisplayGroup) { $GFRParams.Add("DisplayGroup", $DisplayGroup) }
+    if ($Action) { $GFRParams.Add("Action", $Action) }
+    if ($Enabled) { $GFRParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GFRParams.Add("Direction", $Direction) }
 
     if ($PathCSV -and (Test-Path $PathCSV))
     {
@@ -60,7 +68,7 @@ function Export-FWRules {
         else { throw "Rules have not been written to File!" }
     }
 
-    $Rules = Get-FWRules @GFR
+    $Rules = Get-FWRules @GFRParams
     # If only one rule is found, $Rules is not an array.
     if ($Rules -isnot [System.Array]) { $Rules = @($Rules) }
 
@@ -72,6 +80,7 @@ function Export-FWRules {
         $DefaultRule = [FWRule]::new()
         $DefaultRule.ID = "DTFMDefaultRule"
         $DefaultRule.DisplayName = $DisplayName
+        $DefaultRule.Group = ""
         $DefaultRule.Description = "Parameters used when exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
         $DefaultRule.Program = "DTFirewallManagement"
         $DefaultRule.Enabled = $Enabled
@@ -110,6 +119,16 @@ function Export-FWRules {
         Complete path of CSV file where to write firewall rules.
         If not passed, rules will just be printed out in stdout.
 
+    .PARAMETER DisplayName
+        Exports only rules with a DisplayName that matches this value.
+
+    .PARAMETER $Group
+        Exports only rules with a Group that matches this value.
+
+    .PARAMETER $DisplayGroup
+        Exports only rules with a DisplayGroup that matches this value.
+        This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
+
     .PARAMETER Action
         Exports only rules with this Action value.
 
@@ -119,12 +138,13 @@ function Export-FWRules {
     .PARAMETER Direction
         Exports only rules with this Direction value.
 
-    .PARAMETER DisplayName
-        Exports only rules with a DisplayName that matches this value.
-
     .EXAMPLE
         Export-FWRules
-        Displays matching rules in this shell
+        Displays all firewall rules in this shell
+
+    .EXAMPLE
+        Export-FWRules -DisplayName test -Action Allow
+        Displays all firewall rules with action Allow with a DisplayName that contains "test"
 
     .EXAMPLE
         Export-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv"
@@ -149,6 +169,9 @@ function Find-Rule {
         $DisplayName = "",
 
         [string]
+        $Group = "",
+
+        [string]
         $Description = "",
 
         [string]
@@ -170,6 +193,7 @@ function Find-Rule {
         $Rule = $Rules[$i]
         if ((($ID -eq "") -or ($ID -eq $Rule.ID) -or ($ID -eq $Rule.InstanceID)) -and
             (($DisplayName -eq "") -or ($DisplayName -eq $Rule.DisplayName)) -and
+            (($Group -eq "") -or ($Group -eq $Rule.Group)) -and
             (($Description -eq "") -or ($Description -eq $Rule.Description)) -and
             (($Enabled -eq "") -or ($Enabled -eq $Rule.Enabled)) -and
             (($RProfile -eq "") -or ($RProfile -eq $Rule.Profile)) -and
@@ -197,6 +221,9 @@ function Find-Rule {
 
     .PARAMETER DisplayName
         DisplayName that has to be equal to the DisplayName of the rule to be found.
+
+    .PARAMETER Group
+        Group that has to be equal to the Group of the rule to be found.
 
     .PARAMETER Description
         Description that has to be equal to the Description of the rule to be found.
@@ -272,21 +299,24 @@ function Update-FWRules
         }
 
         $DisplayName = $DefaultRule.DisplayName
+        $Group = $DefaultRule.Group
         $Action = $DefaultRule.Action
         $Enabled = $DefaultRule.Enabled
         $Direction = $DefaultRule.Direction
     }
-    else { throw "Cannot find default rule in CSV file, please run Export-FWRules" }
+    else { throw "Cannot find default rule in CSV file.
+                    Please run Export-FWRules to have a compatible CSV file." }
 
-    $GNFR = @{}
-    if ($Action) { $GNFR.Add("Action", $Action) }
-    if ($Enabled) { $GNFR.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFR.Add("Direction", $Direction) }
+    $GNFRParams = @{}
+    if ($Action) { $GNFRParams.Add("Action", $Action) }
+    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
+    if ($Group) { $GNFRParams.Add("Group", $Group) }
 
     if (-not $Silent)
     {
         Write-Host "Reading current firewall rules" -NoNewline
-        if ($DisplayName -or $Action -or $Enabled -or $Direction)
+        if ($DisplayName -or $Action -or $Enabled -or $Direction -or $Group)
         {
             Write-Host " with filters: "  -NoNewline
             if ($DisplayName) { Write-Host "DisplayName" $DisplayName -NoNewline }
@@ -305,6 +335,11 @@ function Update-FWRules
                 if ($DisplayName -or $Action -or $Enabled) { Write-Host ", " -NoNewline }
                 Write-Host "Direction" $Direction -NoNewline
             }
+            if ($Group)
+            {
+                if ($DisplayName -or $Action -or $Enabled -or $Direction) { Write-Host ", " -NoNewline }
+                Write-Host "Group" $Group -NoNewline
+            }
         }
         Write-Host "..."
     }
@@ -313,7 +348,7 @@ function Update-FWRules
     $FirewallRules = Get-NetFirewallRule
 
     # Filter firewall rules with CSV filters.
-    $FilteredRules =  Get-NetFirewallRule @GNFR
+    $FilteredRules =  Get-NetFirewallRule @GNFRParams
     if ($DisplayName) { $FilteredRules = $FilteredRules | Where-Object { $_.DisplayName -match $DisplayName } }
 
     # If only one rule is found, $FilteredRules is not an array.
@@ -330,6 +365,7 @@ function Update-FWRules
             # If $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID.
             $CSVRule = Find-Rule -Rules $CSVRules -ID ([FWRule]::IgnoreTag) `
                         -DisplayName $CurrentRule.DisplayName `
+                        -Group $CurrentRule.Group `
                         -Description $CurrentRule.Description `
                         -Enabled $CurrentRule.Enabled `
                         -RProfile $CurrentRule.Profile `
@@ -340,7 +376,10 @@ function Update-FWRules
             {
                 if (-not $Silent) { Write-Host "Ignoring" $CurrentRule.DisplayName }
             }
-            else { Update-EnabledValue -Enabled $false -ComparingRule $CurrentRule @ForwardingParams }
+            else
+            {
+                Update-Attribute -AttributeName "Enabled" -SourceAttribute "False" -ComparingCimRule $CurrentRule @ForwardingParams
+            }
         }
     }
 
@@ -375,7 +414,7 @@ function Update-FWRules
                 $CurrentRule = Find-Rule -Rules $FirewallRules -ID $CSVRule.ID
 
                 # $CurrentRule is a CimInstance object.
-                if ($CurrentRule) { Update-EnabledValue -Enabled $CSVRule.Enabled -ComparingRule $CurrentRule @ForwardingParams }
+                if ($CurrentRule) { Update-Attribute -AttributeName "Enabled" -SourceAttribute $CSVRule.Enabled -ComparingCimRule $CurrentRule @ForwardingParams }
             }
             else
             {
