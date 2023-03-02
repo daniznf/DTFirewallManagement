@@ -96,7 +96,7 @@ function Get-FWRules
         $Activity = "Parsing rule " + $NFRule.DisplayName
         $PercentComplete = ($i / $NFRulesCount * 100)
 
-        $OutRules.Add((Parse-FWRule -NFRule $NFRule -Activity $Activity -PercentComplete $PercentComplete)) > $null
+        $OutRules.Add((Get-FWRule -NFRule $NFRule -Activity $Activity -PercentComplete $PercentComplete)) > $null
     }
 
     return $OutRules
@@ -131,54 +131,11 @@ function Get-FWRules
 function Get-FWRule
 {
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = "ID")]
         [string]
         $ID,
 
-        [string]
-        $Activity,
-
-        [int]
-        $PercentComplete
-    )
-
-    $NFRule = Get-NetFirewallRule -ID $ID -ErrorAction Ignore
-
-    $Parsed = $null
-    if ($NFRule)
-    {
-        $ProgressParams = @{
-                Activity = $Activity
-                PercentComplete = $PercentComplete
-            }
-
-        $Parsed = Parse-FWRule $NFRule @ProgressParams
-    }
-
-    return $Parsed
-
-    <#
-    .SYNOPSIS
-        Returns a single firewall rule that matches ID.
-
-    .PARAMETER ID
-        The ID of the rule of whom to fetch infos.
-
-    .PARAMETER Activity
-        The name of the Activity to display in progress bar.
-
-    .PARAMETER PercentComplete
-        The level of PercentComplete for the progress bar.
-
-    .OUTPUTS
-        An object of type FWRule.
-    #>
-}
-
-function Parse-FWRule
-{
-    param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = "NF")]
         [CimInstance]
         $NFRule,
 
@@ -194,7 +151,16 @@ function Parse-FWRule
         PercentComplete = $PercentComplete
     }
 
-    $ID = $NFRule.InstanceID
+    if ($PSCmdlet.ParameterSetName -eq "ID")
+    {
+        $NFRule = Get-NetFirewallRule -ID $ID -ErrorAction Ignore
+        if ($null -eq $NFRule) { return $null }
+    }
+    else
+    {
+        $ID = $NFRule.InstanceID
+    }
+
     # $Name = $NFRule.Name
     $DisplayName = $NFRule.DisplayName
     $Group = $NFRule.Group
@@ -261,7 +227,11 @@ function Parse-FWRule
 
     <#
     .SYNOPSIS
-        Fills all properties of a new FWRule object by querying Firewall services.
+        Retrieves all properties of a firewall rule ands returns a new FWRule object
+        by querying Firewall services.
+
+    .PARAMETER ID
+        The ID of the firewall rule to scan.
 
     .PARAMETER NFRule
         The NetFirewallRule object to scan.
@@ -444,7 +414,7 @@ function Update-Attribute
         "PrimaryStatus", "Status", "EnforcementStatus",
         "PolicyStoreSource", "PolicyStoreSourceType", "RemoteDynamicKeywordAddresses"))
         {
-            $ComparingRule = Parse-FWRule -NFRule $ComparingCimRule
+            $ComparingRule = Get-FWRule -NFRule $ComparingCimRule
         }
 
         $ComparingAttribute = $ComparingRule | Select-Object -ExpandProperty $AttributeName
