@@ -70,10 +70,10 @@ function Get-FilteredNetFirewallRules {
     .PARAMETER DisplayName
         Gets only rules with a DisplayName that matches this value.
 
-    .PARAMETER $Group
+    .PARAMETER Group
         Exports only rules with a Group that matches this value.
 
-    .PARAMETER $DisplayGroup
+    .PARAMETER DisplayGroup
         Exports only rules with a DisplayGroup that matches this value.
         This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
 
@@ -207,10 +207,10 @@ function Export-FWRules {
     .PARAMETER DisplayName
         Exports only rules with a DisplayName that matches this value.
 
-    .PARAMETER $Group
+    .PARAMETER Group
         Exports only rules with a Group that matches this value.
 
-    .PARAMETER $DisplayGroup
+    .PARAMETER DisplayGroup
         Exports only rules with a DisplayGroup that matches this value.
         This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
 
@@ -222,6 +222,9 @@ function Export-FWRules {
 
     .PARAMETER Direction
         Exports only rules with this Direction value.
+
+    .OUTPUTS
+        An array of FWRule objects if no PathCSV is passed, otherwise nothing: all rules are written to file.
 
     .EXAMPLE
         Export-FWRules
