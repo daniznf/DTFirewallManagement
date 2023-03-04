@@ -153,7 +153,7 @@ function Export-FWRules {
         $DefaultRule = [FWRule]::new()
         $DefaultRule.ID = "DTFMDefaultRule"
         $DefaultRule.DisplayName = $DisplayName
-        $DefaultRule.Group = ""
+        $DefaultRule.Group = $Group
         $DefaultRule.Description = "Parameters used when exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
         $DefaultRule.Program = "DTFirewallManagement"
         $DefaultRule.Enabled = $Enabled
