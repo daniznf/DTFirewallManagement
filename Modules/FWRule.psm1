@@ -41,92 +41,6 @@ class FWRule
     static [string] $IgnoreTag = "_ignore"
 }
 
-function Get-FWRules
-{
-    param
-    (
-        [string]
-        [ValidateSet("Allow", "Block")]
-        $Action,
-
-        [string]
-        [ValidateSet("True", "False")]
-        $Enabled,
-
-        [string]
-        [ValidateSet("Inbound", "Outbound")]
-        $Direction,
-
-        [string]
-        $DisplayName,
-
-        [string]
-        $Group,
-
-        [string]
-        $DisplayGroup
-    )
-
-    $GNFRParams = @{}
-
-    if ($Action) { $GNFRParams.Add("Action", $Action) }
-    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
-
-    $NFRules = Get-NetFirewallRule @GNFRParams
-
-    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
-    # - Combining DisplayName with other filters
-    # - Filtering using -match
-    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
-    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
-    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
-
-    # If only one rule is found, $NFRules is not an array.
-    if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
-
-    $NFRulesCount = $NFRules.Count
-
-    $OutRules = New-Object System.Collections.ArrayList
-
-    for ($i = 0; $i -lt $NFRulesCount; $i++)
-    {
-        $NFRule = $NFRules[$i]
-
-        Write-Progress -Activity ("Parsing rule " + $NFRule.DisplayName) -PercentComplete ($i / $NFRulesCount * 100)
-
-        $OutRules.Add((Get-FWRule -NFRule $NFRule)) > $null
-    }
-
-    return $OutRules
-
-    <#
-    .SYNOPSIS
-        Returns all firewall rules that match given arguments.
-
-    .PARAMETER Action
-        Return all rules with equal Action value.
-
-    .PARAMETER Enabled
-        Return all rules with equal Enabled value.
-
-    .PARAMETER Direction
-        Return all rules with equal Direction value.
-
-    .PARAMETER DisplayName
-        Return all rules with matching DisplayName value.
-
-    .PARAMETER Group
-        Return all rules with matching Group value.
-
-    .PARAMETER DisplayGroup
-        Return all rules with matching DisplayGroup value.
-
-    .OUTPUTS
-        A list of objects of type FWRule.
-    #>
-}
-
 function Get-FWRule
 {
     param(
@@ -477,4 +391,4 @@ function Update-Attribute
 
 # `
 
-Export-ModuleMember -Function Get-FWRules, Get-FWRule, Update-FWRule, Update-Attribute, Add-FWRule
+Export-ModuleMember -Function Get-FWRule, Add-FWRule, Update-FWRule, Update-Attribute

@@ -49,17 +49,6 @@ function Export-FWRules {
         $Direction
     )
 
-    # If module is not found, an exception will be thrown but function will continue.
-    $ModuleVersion = (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
-
-    $GFRParams = @{}
-    if ($DisplayName) { $GFRParams.Add("DisplayName", $DisplayName) }
-    if ($Group) { $GFRParams.Add("Group", $Group) }
-    if ($DisplayGroup) { $GFRParams.Add("DisplayGroup", $DisplayGroup) }
-    if ($Action) { $GFRParams.Add("Action", $Action) }
-    if ($Enabled) { $GFRParams.Add("Enabled", $Enabled) }
-    if ($Direction) { $GFRParams.Add("Direction", $Direction) }
-
     if ($PathCSV -and (Test-Path $PathCSV))
     {
         $Overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
@@ -68,14 +57,33 @@ function Export-FWRules {
         else { throw "Rules have not been written to File!" }
     }
 
-    $Rules = Get-FWRules @GFRParams
-    # If only one rule is found, $Rules is not an array.
-    if ($Rules -isnot [System.Array]) { $Rules = @($Rules) }
+    $GNFRParams = @{}
 
-    $RuleList = New-Object System.Collections.ArrayList
+    if ($Action) { $GNFRParams.Add("Action", $Action) }
+    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
+
+    $NFRules = Get-NetFirewallRule @GNFRParams
+
+    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
+    # - Combining DisplayName with other filters
+    # - Filtering using -match
+    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
+    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
+    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
+
+    # If only one rule is found, $NFRules is not an array.
+    if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
+
+    $NFRulesCount = $NFRules.Count
 
     if ($PathCSV)
     {
+        # If module is not found, an exception will be thrown but function will continue.
+        $ModuleVersion = (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
+
+        $OutRules = New-Object System.Collections.ArrayList
+
         # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported.
         $DefaultRule = [FWRule]::new()
         $DefaultRule.ID = "DTFMDefaultRule"
@@ -93,19 +101,31 @@ function Export-FWRules {
         $DefaultRule.RemoteAddress =  ""
         $DefaultRule.RemotePort =  ""
 
-        $RuleList.Add($DefaultRule) > $null
+        $OutRules.Add($DefaultRule) > $null
+    }
 
-        if ($Rules) { $RuleList.AddRange($Rules) }
+    for ($i = 0; $i -lt $NFRulesCount; $i++)
+    {
+        $NFRule = $NFRules[$i]
 
-        $RuleList | Export-Csv $PathCSV -NoTypeInformation
+        Write-Progress -Activity ("Parsing rule " + $NFRule.DisplayName) -PercentComplete ($i / $NFRulesCount * 100)
+
+        $FWRule = Get-FWRule -NFRule $NFRule
+        if ($PathCSV)
+        {
+            $OutRules.Add($FWRule) > $null
+        }
+        else
+        {
+            $FWRule
+        }
+    }
+
+    if ($PathCSV)
+    {
+        $OutRules | Export-Csv $PathCSV -NoTypeInformation
         Write-Host "Exported" $PathCSV
     }
-    else
-    {
-        if ($Rules) { $RuleList.AddRange($Rules) }
-        $RuleList
-    }
-
 
     <#
     .SYNOPSIS
