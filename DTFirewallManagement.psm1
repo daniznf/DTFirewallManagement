@@ -22,6 +22,75 @@
 
 $MinVersion = [System.Version]::new("0.20.0")
 
+function Get-FilteredNetFirewallRules {
+    param (
+        [string]
+        $DisplayName,
+
+        [string]
+        $Group,
+
+        [string]
+        $DisplayGroup,
+
+        [ValidateSet("Allow", "Block")]
+        [string]
+        $Action,
+
+        [ValidateSet("True", "False")]
+        [string]
+        $Enabled,
+
+        [ValidateSet("Inbound", "Outbound")]
+        [string]
+        $Direction
+    )
+
+    $NFRules = Get-NetFirewallRule
+
+    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
+    # - Combining DisplayName with other filters
+    # - Filtering using -match
+    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
+    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
+    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
+    if ($Action) { $NFRules = $NFRules | Where-Object { $_.Action -eq $Action } }
+    if ($Enabled) { $NFRules = $NFRules | Where-Object { $_.Enabled -eq $Enabled } }
+    if ($Direction) { $NFRules = $NFRules | Where-Object { $_.Direction -eq $Direction } }
+
+    return $NFRules
+
+    <#
+    .SYNOPSIS
+        Gets all NetFirewallRules that correspond to filters.
+
+    .DESCRIPTION
+        Filters firewall rules with passed filters.
+
+    .PARAMETER DisplayName
+        Gets only rules with a DisplayName that matches this value.
+
+    .PARAMETER $Group
+        Exports only rules with a Group that matches this value.
+
+    .PARAMETER $DisplayGroup
+        Exports only rules with a DisplayGroup that matches this value.
+        This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
+
+    .PARAMETER Action
+        Exports only rules with this Action value.
+
+    .PARAMETER Enabled
+        Exports only rules with this Enabled value.
+
+    .PARAMETER Direction
+        Exports only rules with this Direction value.
+
+    .OUTPUTS
+        An array of CimInstance objects.
+    #>
+}
+
 function Export-FWRules {
     param (
         [string]
@@ -57,20 +126,16 @@ function Export-FWRules {
         else { throw "Rules have not been written to File!" }
     }
 
-    $GNFRParams = @{}
+    $GFParams = @{}
 
-    if ($Action) { $GNFRParams.Add("Action", $Action) }
-    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
+    if ($DisplayName) { $GFParams.Add("DisplayName", $DisplayName) }
+    if ($Group) { $GFParams.Add("Group", $Group) }
+    if ($DisplayGroup) { $GFParams.Add("DisplayGroup", $DisplayGroup) }
+    if ($Action) { $GFParams.Add("Action", $Action) }
+    if ($Enabled) { $GFParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GFParams.Add("Direction", $Direction) }
 
-    $NFRules = Get-NetFirewallRule @GNFRParams
-
-    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
-    # - Combining DisplayName with other filters
-    # - Filtering using -match
-    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
-    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
-    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
+    $NFRules = Get-FilteredNetFirewallRules @GFParams
 
     # If only one rule is found, $NFRules is not an array.
     if ($NFRules -isnot [System.Array]) { $NFRules = @($NFRules) }
@@ -327,11 +392,14 @@ function Update-FWRules
     else { throw "Cannot find default rule in CSV file.
                     Please run Export-FWRules to have a compatible CSV file." }
 
-    $GNFRParams = @{}
-    if ($Action) { $GNFRParams.Add("Action", $Action) }
-    if ($Enabled) { $GNFRParams.Add("Enabled", $Enabled) }
-    if ($Direction) { $GNFRParams.Add("Direction", $Direction) }
-    if ($Group) { $GNFRParams.Add("Group", $Group) }
+    $GFParams = @{}
+
+    if ($DisplayName) { $GFParams.Add("DisplayName", $DisplayName) }
+    if ($Group) { $GFParams.Add("Group", $Group) }
+    if ($DisplayGroup) { $GFParams.Add("DisplayGroup", $DisplayGroup) }
+    if ($Action) { $GFParams.Add("Action", $Action) }
+    if ($Enabled) { $GFParams.Add("Enabled", $Enabled) }
+    if ($Direction) { $GFParams.Add("Direction", $Direction) }
 
     if (-not $Silent)
     {
@@ -365,11 +433,10 @@ function Update-FWRules
     }
 
     # Get all current firewall rules.
-    $FirewallRules = Get-NetFirewallRule
+    $FirewallRules = Get-FilteredNetFirewallRules
 
     # Filter firewall rules with CSV filters.
-    $FilteredRules =  Get-NetFirewallRule @GNFRParams
-    if ($DisplayName) { $FilteredRules = $FilteredRules | Where-Object { $_.DisplayName -match $DisplayName } }
+    $FilteredRules = Get-FilteredNetFirewallRules @GFParams
 
     # If only one rule is found, $FilteredRules is not an array.
     if ($FilteredRules -isnot [System.Array]) { $FilteredRules = @($FilteredRules) }
