@@ -93,10 +93,9 @@ function Get-FWRules
     {
         $NFRule = $NFRules[$i]
 
-        $Activity = "Parsing rule " + $NFRule.DisplayName
-        $PercentComplete = ($i / $NFRulesCount * 100)
+        Write-Progress -Activity ("Parsing rule " + $NFRule.DisplayName) -PercentComplete ($i / $NFRulesCount * 100)
 
-        $OutRules.Add((Get-FWRule -NFRule $NFRule -Activity $Activity -PercentComplete $PercentComplete)) > $null
+        $OutRules.Add((Get-FWRule -NFRule $NFRule)) > $null
     }
 
     return $OutRules
@@ -137,19 +136,8 @@ function Get-FWRule
 
         [Parameter(Mandatory, ParameterSetName = "NF")]
         [CimInstance]
-        $NFRule,
-
-        [string]
-        $Activity,
-
-        [int]
-        $PercentComplete
+        $NFRule
     )
-
-    $ProgressParams = @{
-        Activity = $Activity
-        PercentComplete = $PercentComplete
-    }
 
     if ($PSCmdlet.ParameterSetName -eq "ID")
     {
@@ -165,14 +153,12 @@ function Get-FWRule
     $DisplayName = $NFRule.DisplayName
     $Group = $NFRule.Group
 
-    if ($Activity) { Write-Progress -CurrentOperation "Basic infos" @ProgressParams }
     $Description = $NFRule.Description
     $Enabled = $NFRule.Enabled
     $RProfile = $NFRule.Profile
     $Direction = $NFRule.Direction
     $Action = $NFRule.Action
 
-    if ($Activity) { Write-Progress -CurrentOperation "Address" @ProgressParams }
     $Address = $NFRule | Get-NetFirewallAddressFilter
 
     if ($Address.LocalAddress -is [System.Array])
@@ -187,11 +173,9 @@ function Get-FWRule
     }
     else { $RemoteAddress = $Address.RemoteAddress }
 
-    if ($Activity) { Write-Progress -CurrentOperation "Application" @ProgressParams }
     $Application = $NFRule | Get-NetFirewallApplicationFilter
     $Program = $Application.Program
 
-    if ($Activity) { Write-Progress -CurrentOperation "Port" @ProgressParams }
     $Port = $NFRule | Get-NetFirewallPortFilter
     $Protocol = $Port.Protocol
     if ($Port.LocalPort -is [System.Array])
@@ -206,7 +190,6 @@ function Get-FWRule
     }
     else { $RemotePort = $Port.RemotePort }
 
-    if ($Activity) { Write-Progress -CurrentOperation "Sum up" @ProgressParams }
     $FWRuleObj = [FWRule]::new()
     $FWRuleObj.ID = $ID
     $FWRuleObj.DisplayName = $DisplayName
@@ -235,12 +218,6 @@ function Get-FWRule
 
     .PARAMETER NFRule
         The NetFirewallRule object to scan.
-
-    .PARAMETER Activity
-        The name of the Activity to display in progress bar.
-
-    .PARAMETER PercentComplete
-        The level of PercentComplete for the progress bar.
 
     .OUTPUTS
         An object of type FWRule.

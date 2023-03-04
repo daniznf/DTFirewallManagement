@@ -359,6 +359,8 @@ function Update-FWRules
     {
         $CurrentRule = $FilteredRules[$i]
 
+        if (-not $Silent) { Write-Progress -Activity ("Parsing rule " + $CurrentRule.DisplayName) -PercentComplete ($i / $FilteredRules.Count * 100) }
+
         $CSVRule = Find-Rule -Rules $CSVRules -ID $CurrentRule.InstanceID
         if (-not $CSVRule)
         {
@@ -391,11 +393,7 @@ function Update-FWRules
 
         if (-not $CSVRule.ID) { continue }
 
-        if (-not $Silent)
-        {
-            $Activity = "Parsing rule " + $CSVRule.DisplayName
-            $PercentComplete = ($i / $CSVRules.Count * 100)
-        }
+        if (-not $Silent) { Write-Progress -Activity ("Parsing rule " + $CSVRule.DisplayName) -PercentComplete ($i / $CSVRules.Count * 100) }
 
         # Do not search for ignored IDs.
         if ($CSVRule.ID -eq [FWRule]::IgnoreTag)
@@ -406,26 +404,33 @@ function Update-FWRules
         {
             if ($FastMode)
             {
-                # FastMode compares $CSVRules with $FilteredRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
+                # FastMode compares $CSVRules with $FirewallRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
                 # It is faster than using Get-FWRule(s) but several properties are missing from each rule, so it is ok to enable or disable rules.
-
-                if (-not $Silent) { Write-Progress -CurrentOperation "Checking only Enabled due to FastMode" -Activity $Activity -PercentComplete $PercentComplete }
 
                 $CurrentRule = Find-Rule -Rules $FirewallRules -ID $CSVRule.ID
 
                 # $CurrentRule is a CimInstance object.
-                if ($CurrentRule) { Update-Attribute -AttributeName "Enabled" -SourceAttribute $CSVRule.Enabled -ComparingCimRule $CurrentRule @ForwardingParams }
+                if ($CurrentRule)
+                {
+                    Update-Attribute -AttributeName "Enabled" -SourceAttribute $CSVRule.Enabled -ComparingCimRule $CurrentRule @ForwardingParams
+                }
             }
             else
             {
                 # Regular mode calls Get-FWRule for each rule of CSV, it's slower than Get-NetFirewallRule but all properties are filled in and can be compared.
-                $CurrentRule = Get-FWRule -ID $CSVRule.ID -Activity $Activity -PercentComplete $PercentComplete
+                $CurrentRule = Get-FWRule -ID $CSVRule.ID
 
                 # $CurrentRule is a FWRule object.
-                if ($CurrentRule) { Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams }
+                if ($CurrentRule)
+                {
+                    Update-FWRule -SourceRule $CSVRule -ComparingRule $CurrentRule @ForwardingParams
+                }
             }
 
-            if (-not $CurrentRule) { Add-FWRule -NewRule $CSVRule @ForwardingParams }
+            if (-not $CurrentRule)
+            {
+                Add-FWRule -NewRule $CSVRule @ForwardingParams
+            }
         }
     }
 
