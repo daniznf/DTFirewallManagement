@@ -19,6 +19,7 @@
 #>
 
 #Requires -RunAsAdministrator
+using module ".\Modules\FWRule.psm1"
 
 $MinVersion = [System.Version]::new("0.20.0")
 
