@@ -21,8 +21,6 @@
 #Requires -RunAsAdministrator
 using module ".\Modules\FWRule.psm1"
 
-$MinVersion = [System.Version]::new("0.20.0")
-
 function Get-FilteredNetFirewallRules {
     param (
         [string]
@@ -119,6 +117,10 @@ function Export-FWRules {
         $Direction
     )
 
+
+    $ModuleVersion = Read-Version
+    if (-not $Silent) { Write-Host "DTFirewallManagement version $ModuleVersion" }
+
     if ($PathCSV -and (Test-Path $PathCSV))
     {
         $Overwrite = Read-Host -Prompt "File exists. Overwrite it? [y/n]"
@@ -145,9 +147,6 @@ function Export-FWRules {
 
     if ($PathCSV)
     {
-        # If module is not found, an exception will be thrown but function will continue.
-        $ModuleVersion = (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
-
         $OutRules = New-Object System.Collections.ArrayList
 
         # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported.
@@ -359,6 +358,10 @@ function Update-FWRules
         $FastMode
     )
 
+    $MinVersion = [System.Version]::new("0.20.0")
+    $ModuleVersion = Read-Version
+    if (-not $Silent) { Write-Host "DTFirewallManagement version $ModuleVersion" }
+
     $ForwardingParams = @{}
     if ($WhatIf) { $ForwardingParams.Add("WhatIf", $WhatIf) }
     if ($Silent) { $ForwardingParams.Add("Silent", $Silent) }
@@ -560,6 +563,11 @@ function Update-FWRules
         Update-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv" -FastMode
         Fast check and update only Enabled values.
     #>
+}
+
+
+function Read-Version {
+    return (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
 }
 
 
