@@ -175,6 +175,13 @@ function  Add-FWRule
     if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
     if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
 
+    $Approved, $ErrorMessage = Approve-NewRule -Rule $NewRule
+    if (-not $Approved )
+    {
+        if (-not $Silent) { Write-Host -BackgroundColor DarkRed ($ErrorMessage) }
+        return
+    }
+
     $AddedRule = New-NetFirewallRule @NNFRParams @RuleParams
 
     # Dot notation and Set-NetFirewallRule is required for Group.
@@ -415,6 +422,40 @@ function Update-Attribute
     #>
 }
 
+function Approve-NewRule {
+    param (
+        [Parameter(Mandatory)]
+        [FWRule]
+        $Rule
+    )
+
+    $members = Get-Member -InputObject $Rule -MemberType Properties
+    for ($i = 0; $i -lt $members.Length; $i++)
+    {
+        $member = $members[$i]
+        $value = Select-Object -InputObject $Rule -ExpandProperty $member.Name
+
+        if ($value.Contains("*"))
+        {
+            return $false, "New rule cannot contain ""*"" in any of its attributes."
+        }
+    }
+
+    return $true, ""
+
+
+    <#
+    .SYNOPSIS
+        Checks if all attributes of this new rule are valid.
+
+    .PARAMETER Rule
+        Rule to check.
+
+    .OUTPUTS
+        An array of two elements: $true and an empty string if the rule is valid,
+        otherwise $false and the error message.
+    #>
+}
 
 # `
 
