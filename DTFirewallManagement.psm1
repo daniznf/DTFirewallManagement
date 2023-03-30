@@ -151,7 +151,7 @@ function Export-FWRules {
 
         # Create a special rule to be consumed only by Update-FWRules, to avoid updating rules that were not exported.
         $DefaultRule = [FWRule]::new()
-        $DefaultRule.ID = "DTFMDefaultRule"
+        $DefaultRule.ID = "DTFMDefaultRule_v" + $ModuleVersion
         $DefaultRule.DisplayName = $DisplayName
         $DefaultRule.Group = $Group
         $DefaultRule.Description = "Parameters used when exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
@@ -161,7 +161,7 @@ function Export-FWRules {
         $DefaultRule.Action = $Action
         $DefaultRule.Profile = ""
         $DefaultRule.Protocol =  ""
-        $DefaultRule.LocalAddress =  $ModuleVersion
+        $DefaultRule.LocalAddress =  ""
         $DefaultRule.LocalPort =  ""
         $DefaultRule.RemoteAddress =  ""
         $DefaultRule.RemotePort =  ""
@@ -358,7 +358,7 @@ function Update-FWRules
         $FastMode
     )
 
-    $MinVersion = [System.Version]::new("0.20.0")
+    $MinVersion = [System.Version]::new("0.24.1")
     $ModuleVersion = Read-Version
     if (-not $Silent) { Write-Host "DTFirewallManagement version $ModuleVersion" }
 
@@ -373,10 +373,12 @@ function Update-FWRules
 
     # Use default rule written in csv to know which filters were used during export, then update rules with the same filters.
     $DefaultRule = $CSVRules[0]
-    if ($DefaultRule.ID -eq "DTFMDefaultRule")
+    $DefaultID = $DefaultRule.ID
+    if ($DefaultID.Contains("DTFMDefaultRule_v"))
     {
         $CSVVersion = $null
-        if ([System.Version]::TryParse($DefaultRule.LocalAddress, [ref] $CSVVersion))
+        $sVersion = $DefaultID.Substring($DefaultID.IndexOf("_v") + 2)
+        if ([System.Version]::TryParse($sVersion, [ref] $CSVVersion))
         {
             if ($CSVVersion -lt $MinVersion)
             {
