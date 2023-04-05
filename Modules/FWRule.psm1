@@ -457,6 +457,75 @@ function Approve-NewRule {
     #>
 }
 
+function Test-RuleMatch {
+    param (
+        [FWRule]
+        $FWRule,
+
+        [string]
+        $Program,
+
+        [string]
+        $Protocol,
+
+        [string]
+        $LocalAddress,
+
+        [string]
+        $LocalPort,
+
+        [string]
+        $RemoteAddress,
+
+        [string]
+        $RemotePort
+    )
+
+    if ((("" -eq $Program) -or ($FWRule.Program -match $Program)) -and
+        (("" -eq $Protocol) -or ($FWRule.Protocol -eq $Protocol)) -and
+        (("" -eq $LocalAddress) -or ($FWRule.LocalAddress -eq $LocalAddress)) -and
+        (("" -eq $LocalPort) -or ($FWRule.LocalPort -eq $LocalPort)) -and
+        (("" -eq $RemoteAddress) -or ($FWRule.RemoteAddress -eq $RemoteAddress)) -and
+        (("" -eq $RemotePort) -or ($FWRule.RemotePort -eq $RemotePort)))
+      {
+        return $true
+      }
+      else
+      {
+        return $false
+      }
+
+    <#
+    .DESCRIPTION
+        Tests if this FWRule's attributes satisfy parameters.
+
+    .PARAMETER FWRule
+        Object of type FWRule to be tested.
+
+    .PARAMETER Program
+        Program value that must match rule's Program.
+
+    .PARAMETER Protocol
+        Protocol value that must be equal to rule's Protocol.
+
+    .PARAMETER LocalAddress
+        LocalAddress value that must be equal to rule's LocalAddress.
+
+    .PARAMETER LocalPort
+        LocalPort value that must be equal to rule's LocalPort.
+
+    .PARAMETER RemoteAddress
+        RemoteAddress value that must be equal to rule's RemoteAddress.
+
+    .PARAMETER RemotePort
+        RemotePort value that must be equal to rule's RemotePort.
+
+    .OUTPUTS
+        $true if all FWRule's attributes either are empty or satisfy passed parameters, otherwise $false.
+    #>
+}
+
 # `
 
-Export-ModuleMember -Function Get-FWRule, Add-FWRule, Update-FWRule, Update-Attribute
+Export-ModuleMember -Function Get-FWRule, Add-FWRule, Update-FWRule, Update-Attribute, `
+                    Approve-NewRule, Test-RuleMatch

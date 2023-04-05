@@ -24,6 +24,9 @@ using module ".\Modules\FWRule.psm1"
 function Get-FilteredNetFirewallRules {
     param (
         [string]
+        $ID,
+
+        [string]
         $DisplayName,
 
         [string]
@@ -32,17 +35,21 @@ function Get-FilteredNetFirewallRules {
         [string]
         $DisplayGroup,
 
-        [ValidateSet("Allow", "Block")]
-        [string]
-        $Action,
-
         [ValidateSet("True", "False")]
         [string]
         $Enabled,
 
+        [ValidateSet("Any", "Domain", "Private", "Public")]
+        [string]
+        $RuleProfile,
+
         [ValidateSet("Inbound", "Outbound")]
         [string]
-        $Direction
+        $Direction,
+
+        [ValidateSet("Allow", "Block")]
+        [string]
+        $Action
     )
 
     $NFRules = Get-NetFirewallRule
@@ -50,21 +57,26 @@ function Get-FilteredNetFirewallRules {
     # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
     # - Combining DisplayName with other filters
     # - Filtering using -match
+    if ($ID) { $NFRules = $NFRules | Where-Object { $_.ID -eq $ID } }
     if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
     if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
     if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
-    if ($Action) { $NFRules = $NFRules | Where-Object { $_.Action -eq $Action } }
     if ($Enabled) { $NFRules = $NFRules | Where-Object { $_.Enabled -eq $Enabled } }
+    if ($RuleProfile) { $NFRules = $NFRules | Where-Object { $_.Profile -eq $RuleProfile } }
     if ($Direction) { $NFRules = $NFRules | Where-Object { $_.Direction -eq $Direction } }
+    if ($Action) { $NFRules = $NFRules | Where-Object { $_.Action -eq $Action } }
 
     return $NFRules
 
     <#
     .SYNOPSIS
-        Gets all NetFirewallRules that correspond to filters.
+        Gets all NetFirewallRules that correspond to filters, directly from firewall.
 
     .DESCRIPTION
         Filters firewall rules with passed filters.
+
+    .PARAMETER ID
+        Gets only the rule with this ID.
 
     .PARAMETER DisplayName
         Gets only rules with a DisplayName that matches this value.
@@ -76,14 +88,17 @@ function Get-FilteredNetFirewallRules {
         Exports only rules with a DisplayGroup that matches this value.
         This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
 
-    .PARAMETER Action
-        Exports only rules with this Action value.
-
     .PARAMETER Enabled
         Exports only rules with this Enabled value.
 
+    .PARAMETER RuleProfile
+        Exports only rules with this RuleProfile value.
+
     .PARAMETER Direction
         Exports only rules with this Direction value.
+
+    .PARAMETER Action
+        Exports only rules with this Action value.
 
     .OUTPUTS
         An array of CimInstance objects.
@@ -92,34 +107,111 @@ function Get-FilteredNetFirewallRules {
 
 function Export-FWRules {
     param (
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [string]
         $PathCSV,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [string]
+        $ID,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [string]
         $DisplayName,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [string]
         $Group,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [string]
         $DisplayGroup,
 
-        [ValidateSet("Allow", "Block")]
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [string]
-        $Action,
+        $Program,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [ValidateSet("True", "False")]
         [string]
         $Enabled,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [ValidateSet("Any", "Domain", "Private", "Public")]
+        [string]
+        $RuleProfile,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
         [ValidateSet("Inbound", "Outbound")]
         [string]
-        $Direction
-    )
+        $Direction,
 
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [ValidateSet("Allow", "Block")]
+        [string]
+        $Action,
+
+        [Parameter(Mandatory, ParameterSetName="ProtocolName")]
+        [ValidateSet("TCP", "UDP", "ICMPv4", "ICMPv6")]
+        [string]
+        $ProtocolName,
+
+        [Parameter(Mandatory, ParameterSetName="ProtocolNumber")]
+        [ValidateRange(0, 255)]
+        [int]
+        $ProtocolNumber,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [string]
+        $LocalAddress,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [string]
+        $LocalPort,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [string]
+        $RemoteAddress,
+
+        [Parameter(ParameterSetName="Default")]
+        [Parameter(ParameterSetName="ProtocolName")]
+        [Parameter(ParameterSetName="ProtocolNumber")]
+        [string]
+        $RemotePort
+    )
 
     $ModuleVersion = Read-Version
     if (-not $Silent) { Write-Host "DTFirewallManagement version $ModuleVersion" }
+
+    $Protocol = ""
+    if ($PSCmdlet.ParameterSetName -eq "ProtocolNumber") { $Protocol = $ProtocolNumber.ToString() }
+    else { $Protocol = $ProtocolName }
 
     if ($PathCSV -and (Test-Path $PathCSV))
     {
@@ -130,13 +222,22 @@ function Export-FWRules {
     }
 
     $GFParams = @{}
-
+    if ($ID) { $GFParams.Add("ID", $ID) }
     if ($DisplayName) { $GFParams.Add("DisplayName", $DisplayName) }
     if ($Group) { $GFParams.Add("Group", $Group) }
     if ($DisplayGroup) { $GFParams.Add("DisplayGroup", $DisplayGroup) }
-    if ($Action) { $GFParams.Add("Action", $Action) }
     if ($Enabled) { $GFParams.Add("Enabled", $Enabled) }
+    if ($RuleProfile) { $GFParams.Add("RuleProfile", $RuleProfile) }
     if ($Direction) { $GFParams.Add("Direction", $Direction) }
+    if ($Action) { $GFParams.Add("Action", $Action) }
+
+    $TRMParams = @{}
+    if ($Program) { $TRMParams.Add("Program", $Program) }
+    if ($Protocol) { $TRMParams.Add("Protocol", $Protocol) }
+    if ($LocalAddress) { $TRMParams.Add("LocalAddress", $LocalAddress) }
+    if ($LocalPort) { $TRMParams.Add("LocalPort", $LocalPort) }
+    if ($RemoteAddress) { $TRMParams.Add("RemoteAddress", $RemoteAddress) }
+    if ($RemotePort) { $TRMParams.Add("RemotePort", $RemotePort) }
 
     $NFRules = Get-FilteredNetFirewallRules @GFParams
 
@@ -154,18 +255,17 @@ function Export-FWRules {
         $DefaultRule.ID = "DTFMDefaultRule_v" + $ModuleVersion
         $DefaultRule.DisplayName = $DisplayName
         $DefaultRule.Group = $Group
-        $DefaultRule.Description = "Parameters used when exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any field." -f [FWRule]::IgnoreTag
-        $DefaultRule.Program = "DTFirewallManagement"
+        $DefaultRule.Program = $Program
         $DefaultRule.Enabled = $Enabled
+        $DefaultRule.Profile = $RuleProfile
         $DefaultRule.Direction = $Direction
         $DefaultRule.Action = $Action
-        $DefaultRule.Profile = ""
-        $DefaultRule.Protocol =  ""
-        $DefaultRule.LocalAddress =  ""
-        $DefaultRule.LocalPort =  ""
-        $DefaultRule.RemoteAddress =  ""
-        $DefaultRule.RemotePort =  ""
-
+        $DefaultRule.Protocol =  $Protocol
+        $DefaultRule.LocalAddress =  $LocalAddress
+        $DefaultRule.LocalPort =  $LocalPort
+        $DefaultRule.RemoteAddress =  $RemoteAddress
+        $DefaultRule.RemotePort =  $RemotePort
+        $DefaultRule.Description = "Parameters used when exporting rules, do not edit this line!! Use ""{0}"" , without quotes, to ignore any other field." -f [FWRule]::IgnoreTag
         $OutRules.Add($DefaultRule) > $null
     }
 
@@ -173,23 +273,28 @@ function Export-FWRules {
     {
         $NFRule = $NFRules[$i]
 
-        Write-Progress -Activity ("Parsing rule " + $NFRule.DisplayName) -PercentComplete ($i / $NFRulesCount * 100)
+        Write-Progress -Activity "Parsing firewall rules" -PercentComplete ($i / $NFRulesCount * 100) -CurrentOperation $NFRule.DisplayName
 
         $FWRule = Get-FWRule -NFRule $NFRule
-        if ($PathCSV)
+
+        if (Test-RuleMatch -FWRule $FWRule @TRMParams)
         {
-            $OutRules.Add($FWRule) > $null
+            if ($PathCSV)
+            {
+                $OutRules.Add($FWRule) > $null
+            }
+            else
+            {
+                $FWRule
+            }
         }
-        else
-        {
-            $FWRule
-        }
+        # else FWRule does not meet filters requirements
     }
 
     if ($PathCSV)
     {
-        $OutRules | Export-Csv $PathCSV -NoTypeInformation
-        Write-Host "Exported" $PathCSV
+        $OutRules | Export-Csv -Path $PathCSV -NoTypeInformation
+        Write-Host "Exported $PathCSV"
     }
 
     <#
@@ -204,6 +309,9 @@ function Export-FWRules {
         Complete path of CSV file where to write firewall rules.
         If not passed, rules will just be printed out in stdout.
 
+    .PARAMETER ID
+        Exports only the rule with this ID.
+
     .PARAMETER DisplayName
         Exports only rules with a DisplayName that matches this value.
 
@@ -214,14 +322,38 @@ function Export-FWRules {
         Exports only rules with a DisplayGroup that matches this value.
         This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
 
-    .PARAMETER Action
-        Exports only rules with this Action value.
+    .PARAMETER Program
+        Exports only rules with a Program that matches this value.
 
     .PARAMETER Enabled
         Exports only rules with this Enabled value.
 
+    .PARAMETER RuleProfile
+        Exports only rules with this RuleProfile value.
+
     .PARAMETER Direction
         Exports only rules with this Direction value.
+
+    .PARAMETER Action
+        Exports only rules with this Action value.
+
+    .PARAMETER ProtocolName
+        Exports only rules with this ProtocolName value.
+
+    .PARAMETER ProtocolNumber
+        Exports only rules with this ProtocolNumber value.
+
+    .PARAMETER LocalAddress
+        Exports only rules with this LocalAddress value.
+
+    .PARAMETER LocalPort
+        Exports only rules with this LocalPort value.
+
+    .PARAMETER RemoteAddress
+        Exports only rules with this RemoteAddress value.
+
+    .PARAMETER RemotePort
+        Exports only rules with this RemotePort value.
 
     .OUTPUTS
         An array of FWRule objects if no PathCSV is passed, otherwise nothing: all rules are written to file.
@@ -236,7 +368,7 @@ function Export-FWRules {
 
     .EXAMPLE
         Export-FWRules -PathCSV "$env:USERPROFILE\Desktop\Rules.csv"
-        Exports to user's desktop all firewall rules in Rules.csv
+        Exports to user's desktop all firewall rules
 
     .EXAMPLE
         Export-FWRules -PathCSV "$env:USERPROFILE\Desktop\Filtered_Rules.csv" -Enabled True -Action Allow -Profile Private -Direction Inbound
@@ -246,63 +378,121 @@ function Export-FWRules {
 
 function Find-Rule {
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName="CimRules")]
         [Array]
-        $Rules,
+        $CimRules,
 
-        [string]
-        $ID = "",
+        [Parameter(Mandatory, ParameterSetName="FWRules")]
+        [Array]
+        $FWRules,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $DisplayName = "",
+        $ID,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $Group = "",
+        $DisplayName,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $Description = "",
+        $Group,
 
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $Enabled = "",
+        $Program,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $RProfile = "",
+        $Enabled,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $Direction = "",
+        $RProfile,
 
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
         [string]
-        $Action = ""
+        $Direction,
+
+        [Parameter(ParameterSetName="CimRules")]
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $Action,
+
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $Protocol,
+
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $LocalAddress,
+
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $LocalPort,
+
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $RemoteAddress,
+
+        [Parameter(ParameterSetName="FWRules")]
+        [string]
+        $RemotePort
     )
 
-    $RuleToReturn = $null
+    $Rules = ""
+    if ($PSCmdlet.ParameterSetName -eq "CimRules") { $Rules = $CimRules}
+    else { $Rules = $FWRules }
+
     for ($i = 0; $i -lt $Rules.Length; $i++)
     {
         $Rule = $Rules[$i]
+
         if ((($ID -eq "") -or ($ID -eq $Rule.ID) -or ($ID -eq $Rule.InstanceID)) -and
             (($DisplayName -eq "") -or ($DisplayName -eq $Rule.DisplayName)) -and
             (($Group -eq "") -or ($Group -eq $Rule.Group)) -and
-            (($Description -eq "") -or ($Description -eq $Rule.Description)) -and
             (($Enabled -eq "") -or ($Enabled -eq $Rule.Enabled)) -and
             (($RProfile -eq "") -or ($RProfile -eq $Rule.Profile)) -and
             (($Direction -eq "") -or ($Direction -eq $Rule.Direction)) -and
             (($Action -eq "") -or ($Action -eq $Rule.Action)))
         {
-            $RuleToReturn = $Rule
-            break
+            if ($Rule -is [FWRule])
+            {
+                if ((($Program -eq "") -or ($Program -eq $Rule.Program)) -and
+                (($Protocol -eq "") -or ($Protocol -eq $Rule.Protocol)) -and
+                (($LocalAddress -eq "") -or ($LocalAddress -eq $Rule.LocalAddress)) -and
+                (($LocalPort -eq "") -or ($LocalPort -eq $Rule.LocalPort)) -and
+                (($RemoteAddress -eq "") -or ($RemoteAddress -eq $Rule.RemoteAddress)) -and
+                (($RemotePort -eq "") -or ($RemotePort -eq $Rule.RemotePort)))
+                {
+                    return $Rule
+                }
+            }
+            else
+            {
+                return $Rule
+            }
         }
     }
-    return $RuleToReturn
 
     <#
     .SYNOPSIS
-        Finds a rule with parameters equal to given ones.
+        Finds a rule with parameters equal to given ones, in an array of rules.
 
     .DESCRIPTION
         Rule can be searched passing any combination of parameters.
 
-    .PARAMETER Rules
-        An array of rules of type CimInstance or FWRule.
+    .PARAMETER CimRules
+        An array of rules of type CimInstance.
+
+    .PARAMETER FWRules
+        An array of rules of type FWRule.
 
     .PARAMETER ID
         ID that has to be equal to the ID of the rule to be found.
@@ -313,8 +503,8 @@ function Find-Rule {
     .PARAMETER Group
         Group that has to be equal to the Group of the rule to be found.
 
-    .PARAMETER Description
-        Description that has to be equal to the Description of the rule to be found.
+    .PARAMETER Program
+        Program that has to be equal to the Program of the rule to be found.
 
     .PARAMETER Enabled
         Enabled value that has to be equal to the Enabled value of the rule to be found.
@@ -328,15 +518,30 @@ function Find-Rule {
     .PARAMETER Action
         Action value that has to be equal to the Action value of the rule to be found.
 
+    .PARAMETER Protocol
+        Protocol value that has to be equal to the Protocol value of the rule to be found.
+
+    .PARAMETER LocalAddress
+        LocalAddress value that has to be equal to the LocalAddress value of the rule to be found.
+
+    .PARAMETER LocalPort
+        LocalPort value that has to be equal to the LocalPort value of the rule to be found.
+
+    .PARAMETER RemoteAddress
+        RemoteAddress value that has to be equal to the RemoteAddress value of the rule to be found.
+
+    .PARAMETER RemotePort
+        RemotePort value that has to be equal to the RemotePort value of the rule to be found.
+
     .OUTPUTS
         The first rule corresponding to search parameters, if found, or $null if not found.
-        The type of this rule matches the array passed in Rules parameter.
+        The type of this rule matches the array passed in CimRules or FWRules.
 
     .EXAMPLE
-        Find-Rule -Rules (Get-NetFirewallRule) -ID "MyRuleID"
+        Find-Rule -CimRules (Get-NetFirewallRule) -ID "MyRuleID"
 
     .EXAMPLE
-        Find-Rule -Rules (Get-FWRules) -ID "MyRuleID"
+        Find-Rule -FWRules (Get-FWRules) -ID "MyRuleID"
     #>
 }
 
@@ -358,7 +563,7 @@ function Update-FWRules
         $FastMode
     )
 
-    $MinVersion = [System.Version]::new("0.24.1")
+    $MinVersion = [System.Version]::new("0.24.2")
     $ModuleVersion = Read-Version
     if (-not $Silent) { Write-Host "DTFirewallManagement version $ModuleVersion" }
 
@@ -370,9 +575,24 @@ function Update-FWRules
 
     if (-not $Silent) { Write-Host "Reading $PathCSV..." }
     $CSVRules = Import-Csv $PathCSV
+    if ($null -eq $CSVRules)
+    {
+        throw [System.IO.InvalidDataException]::new("File is not valid. Please run Export-FWRules to have a compatible CSV file.")
+    }
+
+    $DefaultRule = $CSVRules[0]
+    if ($null -eq $DefaultRule)
+    {
+        throw [System.IO.InvalidDataException]::new("File is not valid. Please run Export-FWRules to have a compatible CSV file.")
+    }
+
+    $Rule0ID = Get-Member -InputObject $DefaultRule -MemberType Properties | Where-Object -Property Name -EQ "ID"
+    if ($null -eq $Rule0ID)
+    {
+        throw [System.IO.InvalidDataException]::new("File is not valid. Please run Export-FWRules to have a compatible CSV file.")
+    }
 
     # Use default rule written in csv to know which filters were used during export, then update rules with the same filters.
-    $DefaultRule = $CSVRules[0]
     $DefaultID = $DefaultRule.ID
     if ($DefaultID.Contains("DTFMDefaultRule_v"))
     {
@@ -394,50 +614,56 @@ function Update-FWRules
 
         $DisplayName = $DefaultRule.DisplayName
         $Group = $DefaultRule.Group
-        $Action = $DefaultRule.Action
+        $Program = $DefaultRule.Program
         $Enabled = $DefaultRule.Enabled
+        $RProfile = $DefaultRule.Profile
         $Direction = $DefaultRule.Direction
+        $Action = $DefaultRule.Action
+        $Protocol = $DefaultRule.Protocol
+        $LocalAddress = $DefaultRule.LocalAddress
+        $LocalPort = $DefaultRule.LocalPort
+        $RemoteAddress = $DefaultRule.RemoteAddress
+        $RemotePort = $DefaultRule.RemotePort
     }
     else { throw "Cannot find default rule in CSV file.
                     Please run Export-FWRules to have a compatible CSV file." }
 
     $GFParams = @{}
-
     if ($DisplayName) { $GFParams.Add("DisplayName", $DisplayName) }
     if ($Group) { $GFParams.Add("Group", $Group) }
-    if ($DisplayGroup) { $GFParams.Add("DisplayGroup", $DisplayGroup) }
-    if ($Action) { $GFParams.Add("Action", $Action) }
     if ($Enabled) { $GFParams.Add("Enabled", $Enabled) }
+    if ($RProfile) { $GFParams.Add("RuleProfile", $RProfile) }
     if ($Direction) { $GFParams.Add("Direction", $Direction) }
+    if ($Action) { $GFParams.Add("Action", $Action) }
+
+    $TRMParams = @{}
+    if ($Program) { $TRMParams.Add("Program", $Program) }
+    if ($Protocol) { $TRMParams.Add("Protocol", $Protocol) }
+    if ($LocalAddress) { $TRMParams.Add("LocalAddress", $LocalAddress) }
+    if ($LocalPort) { $TRMParams.Add("LocalPort", $LocalPort) }
+    if ($RemoteAddress) { $TRMParams.Add("RemoteAddress", $RemoteAddress) }
+    if ($RemotePort) { $TRMParams.Add("RemotePort", $RemotePort) }
 
     if (-not $Silent)
     {
         Write-Host "Reading current firewall rules" -NoNewline
-        if ($DisplayName -or $Action -or $Enabled -or $Direction -or $Group)
+
+        if (($GFParams.Count -gt 0) -or ($TRMParams.Count -gt 0))
         {
+            $separator = ""
             Write-Host " with filters: "  -NoNewline
-            if ($DisplayName) { Write-Host "DisplayName" $DisplayName -NoNewline }
-            if ($Action)
+            foreach ($Key in $GFParams.Keys)
             {
-                if ($DisplayName) { Write-Host ", " -NoNewline }
-                Write-Host "Action" $Action -NoNewline
+                Write-Host -NoNewline ($separator + $Key + " = " + $GFParams[$Key])
+                $separator = ", "
             }
-            if ($Enabled)
+            foreach ($Key in $TRMParams.Keys)
             {
-                if ($DisplayName -or $Action) { Write-Host ", " -NoNewline }
-                Write-Host "Enabled" $Enabled -NoNewline
-            }
-            if ($Direction)
-            {
-                if ($DisplayName -or $Action -or $Enabled) { Write-Host ", " -NoNewline }
-                Write-Host "Direction" $Direction -NoNewline
-            }
-            if ($Group)
-            {
-                if ($DisplayName -or $Action -or $Enabled -or $Direction) { Write-Host ", " -NoNewline }
-                Write-Host "Group" $Group -NoNewline
+                Write-Host -NoNewline ($separator + $Key + " = " + $TRMParams[$Key])
+                $separator = ", "
             }
         }
+
         Write-Host "..."
     }
 
@@ -455,33 +681,44 @@ function Update-FWRules
     {
         $CurrentRule = $FilteredRules[$i]
 
-        if (-not $Silent) { Write-Progress -Activity ("Parsing rule " + $CurrentRule.DisplayName) -PercentComplete ($i / $FilteredRules.Count * 100) }
+        if (-not $Silent) { Write-Progress -Activity "Checking if firewall rules are present in CSV" -PercentComplete ($i / $FilteredRules.Count * 100) -CurrentOperation $CurrentRule.DisplayName }
 
-        $CSVRule = Find-Rule -Rules $CSVRules -ID $CurrentRule.InstanceID
+        $CSVRule = Find-Rule -FWRules $CSVRules -ID $CurrentRule.InstanceID
         if (-not $CSVRule)
         {
-            # If $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID.
-            $CSVRule = Find-Rule -Rules $CSVRules -ID ([FWRule]::IgnoreTag) `
-                        -DisplayName $CurrentRule.DisplayName `
-                        -Group $CurrentRule.Group `
-                        -Description $CurrentRule.Description `
-                        -Enabled $CurrentRule.Enabled `
-                        -RProfile $CurrentRule.Profile `
-                        -Direction $CurrentRule.Direction `
-                        -Action $CurrentRule.Action
+            # If rules were filtered by an attribute not included in CimInstance, FWRule is necessary.
+            $CurrentFWRule = Get-FWRule -NFRule $CurrentRule
 
-            if ($CSVRule)
+            if (Test-RuleMatch -FWRule $CurrentFWRule @TRMParams)
             {
-                if (-not $Silent) { Write-Host "Ignoring" $CurrentRule.DisplayName }
-            }
-            else
-            {
-                Update-Attribute -AttributeName "Enabled" -SourceAttribute "False" -ComparingCimRule $CurrentRule @ForwardingParams
+                # If $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID.
+                $CSVRule = Find-Rule -FWRules $CSVRules[1..$CSVRules.Length] -ID ([FWRule]::IgnoreTag) `
+                            -DisplayName $CurrentFWRule.DisplayName `
+                            -Group $CurrentFWRule.Group `
+                            -Program $CurrentFWRule.Program `
+                            -Enabled $CurrentFWRule.Enabled `
+                            -RProfile $CurrentFWRule.Profile `
+                            -Direction $CurrentFWRule.Direction `
+                            -Action $CurrentFWRule.Action `
+                            -Protocol $CurrentFWRule.Protocol `
+                            -LocalAddress $CurrentFWRule.LocalAddress `
+                            -LocalPort $CurrentFWRule.LocalPort `
+                            -RemoteAddress $CurrentFWRule.RemoteAddress `
+                            -RemotePort $CurrentFWRule.RemotePort
+
+                if ($CSVRule)
+                {
+                    if (-not $Silent) { Write-Host "Ignoring" $CurrentRule.DisplayName }
+                }
+                else
+                {
+                    Update-Attribute -AttributeName "Enabled" -SourceAttribute "False" -ComparingCimRule $CurrentRule @ForwardingParams
+                }
             }
         }
     }
 
-    # Update all rules with the same ID, or create new ones.
+    # Update all rules with corresponding ID, or create new ones.
     for ($i = 1; $i -lt $CSVRules.Count; $i++)
     {
         # $i = 0 is DefaultRule
@@ -489,7 +726,7 @@ function Update-FWRules
 
         if (-not $CSVRule.ID) { continue }
 
-        if (-not $Silent) { Write-Progress -Activity ("Parsing rule " + $CSVRule.DisplayName) -PercentComplete ($i / $CSVRules.Count * 100) }
+        if (-not $Silent) { Write-Progress -Activity "Checking if CSV rules are present in firewall" -PercentComplete ($i / $CSVRules.Count * 100) -CurrentOperation $CSVRule.DisplayName }
 
         # Do not search for ignored IDs.
         if ($CSVRule.ID -eq [FWRule]::IgnoreTag)
@@ -503,7 +740,7 @@ function Update-FWRules
                 # FastMode compares $CSVRules with $FirewallRules, which is an array that comes directly from firewall using Get-NetFirewallRule.
                 # It is faster than using Get-FWRule(s) but several properties are missing from each rule, so it is ok to enable or disable rules.
 
-                $CurrentRule = Find-Rule -Rules $FirewallRules -ID $CSVRule.ID
+                $CurrentRule = Find-Rule -CimRules $FirewallRules -ID $CSVRule.ID
 
                 # $CurrentRule is a CimInstance object.
                 if ($CurrentRule)
@@ -566,7 +803,6 @@ function Update-FWRules
         Fast check and update only Enabled values.
     #>
 }
-
 
 function Read-Version {
     return (Test-ModuleManifest "$script:PSScriptRoot\DTFirewallManagement.psd1").Version
