@@ -22,20 +22,23 @@ function Join-String
 {
     param
     (
+        [Parameter(Mandatory)]
         [System.Array]
-        $Arr,
+        $Array,
+
         [string]
         $Separator
     )
 
     $toReturn = ""
 
-    if ($Arr)
+    for ($i = 0; $i -lt $Array.Length; $i++)
     {
-        for ($i = 0; $i -lt $Arr.Length; $i++) { $toReturn += $Arr[$i] + $Separator }
-
-        if ($toReturn.Contains($Separator)) { $toReturn = $toReturn.Remove($toReturn.LastIndexOf($Separator)) }
+        $toReturn += $Array[$i].ToString() + $Separator
     }
+
+    if ($toReturn.Contains($Separator)) { $toReturn = $toReturn.Remove($toReturn.LastIndexOf($Separator)) }
+
     return $toReturn
 
     <#
@@ -52,7 +55,7 @@ function Join-String
         A string with all the items in Arr separated by Separator.
 
     .EXAMPLE
-        Join-String -Arr ("a", "b", "c") -Separator "; "
+        Join-String -Array ("a", "b", "c") -Separator "; "
         a; b; c
     #>
 }
@@ -61,24 +64,25 @@ function Split-String
 {
     param
     (
+        [Parameter(Mandatory)]
         [string]
-        $Str,
+        $String,
+
         [string]
         $Separator
     )
 
-    $splitted = $Str.Split($Separator)
-    if ($splitted -is [System.Array])
+    $Splitted = $String.Split($Separator)
+
+    if ($Splitted -is [System.Array])
     {
-        $toReturn = New-Object System.Collections.ArrayList
-        for ($i = 0; $i -lt $splitted.Length; $i++)
+        for ($i = 0; $i -lt $Splitted.Length; $i++)
         {
-            $trimmed = $splitted[$i].Trim()
-            if ($trimmed) { $null = $toReturn.Add($trimmed) }
+            $Splitted[$i] = $Splitted[$i].Trim()
         }
-        return $toReturn
     }
-    return $splitted
+
+    return $Splitted
 
     <#
     .SYNOPSIS
@@ -95,7 +99,7 @@ function Split-String
         An array of strings.
 
     .EXAMPLE
-        Split-String -Str "a;   b; c   ;d" -Separator "; "
+        Split-String -String "a;   b; c   ;d" -Separator "; "
         a
         b
         c

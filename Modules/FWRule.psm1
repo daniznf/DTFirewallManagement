@@ -39,6 +39,7 @@ class FWRule
     [string]$Description
 
     static [string] $IgnoreTag = "_ignore"
+    static [string] $Separator = ", "
 }
 
 function Get-FWRule
@@ -77,13 +78,13 @@ function Get-FWRule
 
     if ($Address.LocalAddress -is [System.Array])
     {
-        $LocalAddress = Join-String -Arr $Address.LocalAddress -Separator ", "
+        $LocalAddress = Join-String -Array $Address.LocalAddress -Separator ([FWRule]::Separator)
     }
     else { $LocalAddress = $Address.LocalAddress }
 
     if ($Address.RemoteAddress -is [System.Array])
     {
-        $RemoteAddress = Join-String -Arr $Address.RemoteAddress -Separator ", "
+        $RemoteAddress = Join-String -Array $Address.RemoteAddress -Separator ([FWRule]::Separator)
     }
     else { $RemoteAddress = $Address.RemoteAddress }
 
@@ -94,13 +95,13 @@ function Get-FWRule
     $Protocol = $Port.Protocol
     if ($Port.LocalPort -is [System.Array])
     {
-        $LocalPort = Join-String -Arr $Port.LocalPort -Separator ", "
+        $LocalPort = Join-String -Array $Port.LocalPort -Separator ([FWRule]::Separator)
     }
     else { $LocalPort = $Port.LocalPort }
 
     if ($Port.RemotePort -is [System.Array])
     {
-        $RemotePort = Join-String -Arr $Port.RemotePort -Separator ", "
+        $RemotePort = Join-String -Array $Port.RemotePort -Separator ([FWRule]::Separator)
     }
     else { $RemotePort = $Port.RemotePort }
 
@@ -169,10 +170,30 @@ function  Add-FWRule
     if ($NewRule.Direction -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Direction", $NewRule.Direction) }
     if ($NewRule.Action -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Action", $NewRule.Action) }
     if ($NewRule.Protocol -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Protocol", $NewRule.Protocol) }
-    if ($NewRule.LocalAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalAddress", $NewRule.LocalAddress) }
-    if ($NewRule.LocalPort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("LocalPort", $NewRule.LocalPort) }
-    if ($NewRule.RemoteAddress -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemoteAddress", $NewRule.RemoteAddress) }
-    if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag) { $RuleParams.Add("RemotePort", $NewRule.RemotePort) }
+    if ($NewRule.LocalAddress -ne [FWRule]::IgnoreTag)
+    {
+        $LocalAddress = $NewRule.LocalAddress
+        $LclAddr = Split-String -String $LocalAddress -Separator ","
+        $RuleParams.Add("LocalAddress", $LclAddr)
+    }
+    if ($NewRule.LocalPort -ne [FWRule]::IgnoreTag)
+    {
+        $LocalPort = $NewRule.LocalPort
+        $LclPrt = Split-String -String $LocalPort -Separator ","
+        $RuleParams.Add("LocalPort", $LclPrt)
+    }
+    if ($NewRule.RemoteAddress -ne [FWRule]::IgnoreTag)
+    {
+        $RemoteAddress = $NewRule.RemoteAddress
+        $RmtAddr = Split-String -String $RemoteAddress -Separator ","
+        $RuleParams.Add("RemoteAddress", $RmtAddr)
+    }
+    if ($NewRule.RemotePort -ne [FWRule]::IgnoreTag)
+    {
+        $RemotePort = $NewRule.RemotePort
+        $RmtPrt = Split-String -String $RemotePort -Separator ","
+        $RuleParams.Add("RemotePort", $RmtPrt)
+    }
     if ($NewRule.Description -ne [FWRule]::IgnoreTag) { $RuleParams.Add("Description", $NewRule.Description) }
 
     $Approved, $ErrorMessage = Approve-NewRule -Rule $NewRule
@@ -363,35 +384,42 @@ function Update-Attribute
                     Write-Host "to   :" $SourceAttribute
                 }
 
+                # Set-NetFirewallRule will not accept an FWRule
+                if ($ComparingRule -is [FWRule])
+                {
+                    $ComparingRule = Get-NetFirewallRule -ID $ComparingRule.ID
+                }
+
                 # Addresses and ports might need an array instead of string.
                 if (($AttributeName -eq "LocalAddress") -or ($AttributeName -eq "RemoteAddress") -or
                     ($AttributeName -eq "LocalPort") -or ($AttributeName -eq "RemotePort"))
                 {
-                    if ($SourceAttribute.Contains(",")) { $SourceAttribute = Split-String -Str $SourceAttribute -Separator "," }
-                }
-
-                # Group parameter is the source string for the DisplayGroup parameter.
-                if ($AttributeName -eq "Group")
-                {
-                    # Set-NetFirewallRule will not accept an FWRule
-                    if ($ComparingRule -is [FWRule])
+                    if ($SourceAttribute.Contains(","))
                     {
-                        $ComparingRule = Get-NetFirewallRule -ID $ComparingRule.ID
+                        $SrcAttr = Split-String -String $SourceAttribute -Separator ","
+                        $SNFRParams.Add($AttributeName, $SrcAttr)
                     }
+                    else
+                    {
+                        $SNFRParams.Add($AttributeName, $SourceAttribute)
+                    }
+                }
+                elseif ($AttributeName -eq "Group")
+                {
+                    # Group parameter is the source string for the DisplayGroup parameter.
                     # Dot notation and Set-NetFirewallRule is required for Group.
                     $ComparingRule.Group = $SourceAttribute
-                    $ComparingRule | Set-NetFirewallRule @SNFRParams
+                }
+                elseif ($AttributeName -eq "DisplayName")
+                {
+                    $ComparingRule.DisplayName = $SourceAttribute
                 }
                 else
                 {
-                    $SNFRParams.Add("ID", $ComparingRule.ID)
-
-                    # Updating DisplayName is done with -NewDisplayName instead of -DisplayName.
-                    if ($AttributeName -eq "DisplayName") { $SNFRParams.Add("NewDisplayName", $SourceAttribute) }
-                    else { $SNFRParams.Add($AttributeName, $SourceAttribute) }
-
-                    Set-NetFirewallRule @SNFRParams
+                    $SNFRParams.Add($AttributeName, $SourceAttribute)
                 }
+
+                $ComparingRule | Set-NetFirewallRule @SNFRParams
             }
             # else Nothing to change
         }
