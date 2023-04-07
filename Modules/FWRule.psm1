@@ -44,7 +44,7 @@ class FWRule
 
 function Get-FWRule
 {
-    param(
+    param (
         [Parameter(Mandatory, ParameterSetName = "ID")]
         [string]
         $ID,
@@ -172,13 +172,11 @@ function Get-FilteredNetFirewallRules {
 
     $NFRules = Get-NetFirewallRule
 
-    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters. It permits:
-    # - Combining DisplayName with other filters
-    # - Filtering using -match
+    # Where-Object is more flexible than Get-NetFirewallRule's built-in filters.
     if ($ID) { $NFRules = $NFRules | Where-Object { $_.ID -eq $ID } }
-    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -match $DisplayName } }
-    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -match $Group } }
-    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -match $DisplayGroup } }
+    if ($DisplayName) { $NFRules = $NFRules | Where-Object { $_.DisplayName -like "*$DisplayName*" } }
+    if ($Group) { $NFRules = $NFRules | Where-Object { $_.Group -like "*$Group*" } }
+    if ($DisplayGroup) { $NFRules = $NFRules | Where-Object { $_.DisplayGroup -like "*$DisplayGroup*" } }
     if ($Enabled) { $NFRules = $NFRules | Where-Object { $_.Enabled -eq $Enabled } }
     if ($RuleProfile) { $NFRules = $NFRules | Where-Object { $_.Profile -eq $RuleProfile } }
     if ($Direction) { $NFRules = $NFRules | Where-Object { $_.Direction -eq $Direction } }
@@ -197,13 +195,13 @@ function Get-FilteredNetFirewallRules {
         Gets only the rule with this ID.
 
     .PARAMETER DisplayName
-        Gets only rules with a DisplayName that matches this value.
+        Gets only rules with a DisplayName that contains this value.
 
     .PARAMETER Group
-        Exports only rules with a Group that matches this value.
+        Exports only rules with a Group that contains this value.
 
     .PARAMETER DisplayGroup
-        Exports only rules with a DisplayGroup that matches this value.
+        Exports only rules with a DisplayGroup that contains this value.
         This parameter is only used to filter exported rules, and actually depends on $Group parameter of each rule.
 
     .PARAMETER Enabled
@@ -226,11 +224,11 @@ function Get-FilteredNetFirewallRules {
 function Find-Rule {
     param (
         [Parameter(Mandatory, ParameterSetName="CimRules")]
-        [Array]
+        [Ciminstance[]]
         $CimRules,
 
         [Parameter(Mandatory, ParameterSetName="FWRules")]
-        [Array]
+        [FWRule[]]
         $FWRules,
 
         [Parameter(ParameterSetName="CimRules")]
@@ -382,7 +380,7 @@ function Find-Rule {
 
     .OUTPUTS
         The first rule corresponding to search parameters, if found, or $null if not found.
-        The type of this rule matches the array passed in CimRules or FWRules.
+        The type of this rule depends on the array passed as CimRules or FWRules.
 
     .EXAMPLE
         Find-Rule -CimRules (Get-NetFirewallRule) -ID "MyRuleID"
@@ -499,7 +497,7 @@ function Update-FWRule
         $WhatIf
     )
 
-    if ($SourceRule.ID -ne $ComparingRule.ID) { throw "SourceRule's ID and ComparingRule's ID must match."}
+    if ($SourceRule.ID -ne $ComparingRule.ID) { throw "SourceRule's ID and ComparingRule's ID must be equal."}
 
     $UAParams = @{}
     if ($Silent) { $UAParams.Add("Silent", $true) }
@@ -738,7 +736,7 @@ function Approve-NewRule {
     #>
 }
 
-function Test-RuleMatch {
+function Test-RuleEqual {
     param (
         [FWRule]
         $FWRule,
@@ -762,7 +760,7 @@ function Test-RuleMatch {
         $RemotePort
     )
 
-    if ((("" -eq $Program) -or ($FWRule.Program -match $Program)) -and
+    if ((("" -eq $Program) -or ($FWRule.Program -eq $Program)) -and
         (("" -eq $Protocol) -or ($FWRule.Protocol -eq $Protocol)) -and
         (("" -eq $LocalAddress) -or ($FWRule.LocalAddress -eq $LocalAddress)) -and
         (("" -eq $LocalPort) -or ($FWRule.LocalPort -eq $LocalPort)) -and
@@ -778,13 +776,13 @@ function Test-RuleMatch {
 
     <#
     .DESCRIPTION
-        Tests if this FWRule's attributes satisfy parameters.
+        Tests if this FWRule's attributes are equal to passed attributes.
 
     .PARAMETER FWRule
         Object of type FWRule to be tested.
 
     .PARAMETER Program
-        Program value that must match rule's Program.
+        Program value that must be equal to rule's Program.
 
     .PARAMETER Protocol
         Protocol value that must be equal to rule's Protocol.
@@ -809,4 +807,4 @@ function Test-RuleMatch {
 # `
 
 Export-ModuleMember -Function Get-FWRule, Add-FWRule, Update-FWRule, Update-Attribute, `
-                    Approve-NewRule, Test-RuleMatch, Get-FilteredNetFirewallRules, Find-Rule
+                    Approve-NewRule, Test-RuleEqual, Get-FilteredNetFirewallRules, Find-Rule

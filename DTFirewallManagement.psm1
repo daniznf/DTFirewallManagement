@@ -193,7 +193,7 @@ function Export-FWRules {
 
         $FWRule = Get-FWRule -NFRule $NFRule
 
-        if (Test-RuleMatch -FWRule $FWRule @TRMParams)
+        if (Test-RuleEqual -FWRule $FWRule @TRMParams)
         {
             if ($PathCSV)
             {
@@ -436,7 +436,7 @@ function Update-FWRules
             # If rules were filtered by an attribute not included in CimInstance, FWRule is necessary.
             $CurrentFWRule = Get-FWRule -NFRule $CurrentRule
 
-            if (Test-RuleMatch -FWRule $CurrentFWRule @TRMParams)
+            if (Test-RuleEqual -FWRule $CurrentFWRule @TRMParams)
             {
                 # If $CSVRule was not found, check if $CurrentRule has a corresponding CSVRule with ignored ID.
                 $CSVRule = Find-Rule -FWRules $CSVRules[1..$CSVRules.Length] -ID ([FWRule]::IgnoreTag) `
