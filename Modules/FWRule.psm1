@@ -208,7 +208,7 @@ function  Add-FWRule
     # Dot notation and Set-NetFirewallRule is required for Group.
     if (($AddedRule) -and ($NewRule.Group -ne ""))
     {
-        if ($Silent) { NNFRParams.add("Silent", $Silent) }
+        if ($Silent) { $NNFRParams.add("Silent", $Silent) }
         Update-Attribute -AttributeName "Group" -SourceAttribute $NewRule.Group -ComparingCimRule $AddedRule @NNFRParams
     }
 
@@ -457,13 +457,13 @@ function Approve-NewRule {
         $Rule
     )
 
-    $members = Get-Member -InputObject $Rule -MemberType Properties
-    for ($i = 0; $i -lt $members.Length; $i++)
+    $Members = Get-Member -InputObject $Rule -MemberType Properties
+    for ($i = 0; $i -lt $Members.Length; $i++)
     {
-        $member = $members[$i]
-        $value = Select-Object -InputObject $Rule -ExpandProperty $member.Name
+        $Member = $Members[$i]
+        $Value = Select-Object -InputObject $Rule -ExpandProperty $Member.Name
 
-        if ($value.Contains("*"))
+        if ($Value.Contains("*"))
         {
             return $false, "New rule cannot contain ""*"" in any of its attributes."
         }
