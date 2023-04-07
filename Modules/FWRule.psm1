@@ -20,8 +20,7 @@
 
 using module ".\StringHelper.psm1"
 
-class FWRule
-{
+class FWRule {
     [string]$ID
     [string]$DisplayName
     # DisplayGroup is not editable, but is reported in system's graphical instrumentation.
@@ -42,8 +41,7 @@ class FWRule
     static [string] $Separator = ", "
 }
 
-function Get-FWRule
-{
+function Get-FWRule {
     param (
         [Parameter(Mandatory, ParameterSetName = "ID")]
         [string]
@@ -390,10 +388,8 @@ function Find-Rule {
     #>
 }
 
-function  Add-FWRule
-{
-    param
-    (
+function  Add-FWRule {
+    param (
         [Parameter(Mandatory)]
         [FWRule]
         $NewRule,
@@ -478,10 +474,8 @@ function  Add-FWRule
     #>
 }
 
-function Update-FWRule
-{
-    param
-    (
+function Update-FWRule {
+    param (
         [Parameter(Mandatory)]
         [FWRule]
         $SourceRule,
@@ -536,10 +530,8 @@ function Update-FWRule
     #>
 }
 
-function Update-Attribute
-{
-    param
-    (
+function Update-Attribute {
+    param (
         [Parameter(Mandatory,ParameterSetName="FWRule")]
         [Parameter(Mandatory,ParameterSetName="CimRule")]
         [string]

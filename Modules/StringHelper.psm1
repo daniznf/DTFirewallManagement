@@ -18,10 +18,8 @@
     https://github.com/daniznf/DTFirewallManagement
 #>
 
-function Join-String
-{
-    param
-    (
+function Join-String {
+    param (
         [Parameter(Mandatory)]
         [System.Array]
         $Array,
@@ -60,10 +58,8 @@ function Join-String
     #>
 }
 
-function Split-String
-{
-    param
-    (
+function Split-String {
+    param (
         [Parameter(Mandatory)]
         [string]
         $String,

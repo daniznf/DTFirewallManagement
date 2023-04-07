@@ -292,8 +292,7 @@ function Export-FWRules {
     #>
 }
 
-function Update-FWRules
-{
+function Update-FWRules {
     param (
         [Parameter(Mandatory)]
         [string]
